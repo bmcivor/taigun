@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "taigun"
+version = "0.0.0"
+description = "Write Taiga tickets directly to the database from the command line"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+    "psycopg2-binary>=2.9",
+    "python-frontmatter>=1.1",
+]
+
+[project.scripts]
+taigun = "taigun.cli:app"
+
+[dependency-groups]
+dev = []
