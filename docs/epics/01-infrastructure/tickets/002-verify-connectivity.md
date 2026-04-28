@@ -1,4 +1,4 @@
-## 2. Verify DB connectivity from dev machine
+## ~~2. Verify DB connectivity from dev machine~~ (Done)
 
 **Epic:** E1 — Infrastructure & connectivity
 

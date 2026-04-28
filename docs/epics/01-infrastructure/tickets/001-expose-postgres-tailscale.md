@@ -1,4 +1,4 @@
-## 1. Expose Postgres over Tailscale and pin Taiga version in vertex-studio
+## ~~1. Expose Postgres over Tailscale and pin Taiga version in vertex-studio~~ (Done)
 
 **Epic:** E1 — Infrastructure & connectivity
 
