@@ -1,4 +1,4 @@
-## 3. Initialise Python package
+## ~~3. Initialise Python package~~ (Done)
 
 **Epic:** E2 — Project scaffold
 
