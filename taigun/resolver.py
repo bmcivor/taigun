@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from taigun.exceptions import ResolveError
 
@@ -67,6 +68,35 @@ class Resolver:
 
         return row[0]
 
+    def resolve_default_status(self, project_id: int, ticket_type: str) -> int:
+        """Look up the default status ID for the given project and ticket type.
+
+        Args:
+            project_id: Project ID.
+            ticket_type: One of 'story', 'task', 'issue', 'epic'.
+
+        Returns:
+            Default status ID.
+
+        Raises:
+            ResolveError: If ticket_type is invalid or no default status is found.
+        """
+        table = STATUS_TABLES.get(ticket_type)
+        if table is None:
+            raise ResolveError(f"Unknown ticket type '{ticket_type}'")
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                f"SELECT id FROM {table} WHERE project_id = %s AND is_default = true",
+                (project_id,),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise ResolveError(f"No default status found for project {project_id}")
+
+        return row[0]
+
     def resolve_status(self, project_id: int, name: str, ticket_type: str) -> int:
         """Look up a status ID by name for the given project and ticket type.
 
@@ -97,15 +127,16 @@ class Resolver:
 
         return row[0]
 
-    def resolve_priority(self, project_id: int, name: str) -> int:
+    def resolve_priority(self, project_id: int, name: Optional[str]) -> int:
         """Look up a priority ID by name, falling back to the project default.
 
-        Matching is case-insensitive. If no match is found, logs a warning and
-        returns the project's default priority.
+        Matching is case-insensitive. If name is None or no match is found,
+        returns the project's default priority. A warning is logged only when
+        a name was given but not found.
 
         Args:
             project_id: Project ID.
-            name: Priority name.
+            name: Priority name, or None to use the project default directly.
 
         Returns:
             Priority ID.
@@ -113,20 +144,21 @@ class Resolver:
         Raises:
             ResolveError: If no match and no default priority exists.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT id FROM projects_priority"
-                " WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
-                (project_id, name),
+        if name is not None:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id FROM projects_priority"
+                    " WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
+                    (project_id, name),
+                )
+                row = cur.fetchone()
+
+            if row is not None:
+                return row[0]
+
+            logger.warning(
+                "Priority '%s' not found for project %d, falling back to default", name, project_id
             )
-            row = cur.fetchone()
-
-        if row is not None:
-            return row[0]
-
-        logger.warning(
-            "Priority '%s' not found for project %d, falling back to default", name, project_id
-        )
 
         with self._conn.cursor() as cur:
             cur.execute(
@@ -214,6 +246,32 @@ class Resolver:
 
         if row is None:
             raise ResolveError(f"Epic ref #{ref} not found for project {project_id}")
+
+        return row[0]
+
+    def resolve_milestone(self, project_id: int, name: str) -> int:
+        """Look up a milestone ID by name.
+
+        Args:
+            project_id: Project ID.
+            name: Milestone name (case-insensitive).
+
+        Returns:
+            Milestone ID.
+
+        Raises:
+            ResolveError: If the milestone is not found.
+        """
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT id FROM projects_milestone"
+                " WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
+                (project_id, name),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise ResolveError(f"Milestone '{name}' not found for project {project_id}")
 
         return row[0]
 
