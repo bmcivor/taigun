@@ -117,4 +117,5 @@ class FrontmatterParser:
         """
         if isinstance(value, list):
             return [str(t).strip() for t in value]
+
         return [t.strip() for t in str(value).split(",") if t.strip()]
