@@ -4,3 +4,5 @@ services:
       context: .
       target: test
     command: uv run pytest tests/ -v
+    volumes:
+      - .:/app

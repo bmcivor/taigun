@@ -35,6 +35,7 @@ class Task:
     subject: str
     description: str = ""
     parent: Optional[int] = None
+    epic: Optional[int] = None
     assignee: Optional[str] = None
     milestone: Optional[str] = None
     tags: list[str] = field(default_factory=list)
