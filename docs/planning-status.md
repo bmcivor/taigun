@@ -22,10 +22,12 @@ Last updated: 2026-04-30
 - E3 complete
 - 008 complete: `db.py` — ConnectionManager; commit/rollback context manager
 - 009 complete: `resolver.py` — Resolver class; ResolveError in `exceptions.py`
+- 010 complete: `db/ref.py` — `allocate_ref` for per-project ref counters
+- 011 complete: `db/story.py` — `insert_story` writer; full transaction, returns ref
 
 ## What's next
 
-- 010: ref allocation
+- 012: issue writer (`db/issue.py`)
 
 ## Key decisions
 
