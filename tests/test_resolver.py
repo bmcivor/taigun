@@ -140,6 +140,82 @@ class TestResolvePriority:
 
         assert caplog.messages == ["Priority 'Unknown' not found for project 1, falling back to default"]
 
+    def test_none_name_returns_default_without_warning(self, caplog):
+        """Setup: name is None.
+        Expectations: default priority returned; no warning logged; only one DB query made.
+        """
+        resolver, cursor = make_resolver(fetchone_return=(9,))
+        with caplog.at_level(logging.WARNING):
+            result = resolver.resolve_priority(1, None)
+
+        assert result == 9
+        assert caplog.messages == []
+        assert cursor.execute.call_count == 1
+        assert cursor.execute.call_args[0][0] == (
+            "SELECT default_priority_id FROM projects_project WHERE id = %s"
+        )
+
+
+class TestResolveDefaultStatus:
+    def test_returns_default_status_id(self):
+        """Setup: default status exists for project.
+        Expectations: returns the default status ID.
+        """
+        resolver, _ = make_resolver(fetchone_return=(3,))
+
+        assert resolver.resolve_default_status(1, "story") == 3
+
+    def test_not_found_raises(self):
+        """Setup: no default status for project.
+        Expectations: ResolveError naming default status.
+        """
+        resolver, _ = make_resolver(fetchone_return=None)
+        with pytest.raises(ResolveError, match="default status"):
+            resolver.resolve_default_status(1, "story")
+
+    def test_invalid_ticket_type_raises(self):
+        """Setup: unrecognised ticket type passed.
+        Expectations: ResolveError naming the type.
+        """
+        resolver, _ = make_resolver()
+        with pytest.raises(ResolveError, match="banana"):
+            resolver.resolve_default_status(1, "banana")
+
+    def test_queries_correct_table_for_each_type(self):
+        """Setup: each valid ticket type.
+        Expectations: query targets the correct status table exactly.
+        """
+        expected = {
+            "story": "projects_userstorystatus",
+            "task": "projects_taskstatus",
+            "issue": "projects_issuestatus",
+            "epic": "projects_epicstatus",
+        }
+        for ticket_type, table in expected.items():
+            resolver, cursor = make_resolver(fetchone_return=(1,))
+            resolver.resolve_default_status(1, ticket_type)
+            sql = cursor.execute.call_args[0][0]
+
+            assert sql == f"SELECT id FROM {table} WHERE project_id = %s AND is_default = true"
+
+
+class TestResolveMilestone:
+    def test_returns_milestone_id(self):
+        """Setup: milestone exists for project.
+        Expectations: returns the milestone ID.
+        """
+        resolver, _ = make_resolver(fetchone_return=(6,))
+
+        assert resolver.resolve_milestone(1, "Sprint 1") == 6
+
+    def test_not_found_raises(self):
+        """Setup: no milestone with that name.
+        Expectations: ResolveError naming the milestone.
+        """
+        resolver, _ = make_resolver(fetchone_return=None)
+        with pytest.raises(ResolveError, match="Sprint 1"):
+            resolver.resolve_milestone(1, "Sprint 1")
+
 
 class TestResolveIssueType:
     def test_returns_issue_type_id(self):
