@@ -1,4 +1,4 @@
-## 9. Resolver
+## ~~9. Resolver~~ (Done)
 
 **Epic:** E4 — DB layer
 

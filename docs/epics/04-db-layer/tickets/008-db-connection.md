@@ -1,4 +1,4 @@
-## 8. DB connection management
+## ~~8. DB connection management~~ (Done)
 
 **Epic:** E4 — DB layer
 

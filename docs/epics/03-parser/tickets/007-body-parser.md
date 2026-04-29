@@ -1,4 +1,4 @@
-## 7. Body section parser
+## ~~7. Body section parser~~ (Done)
 
 **Epic:** E3 — Markdown parser
 
