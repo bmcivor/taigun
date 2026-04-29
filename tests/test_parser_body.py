@@ -1,7 +1,7 @@
 import pytest
 from taigun.exceptions import ParseError
 from taigun.parsers.body import BodyParser
-from taigun.parsers import parse_file
+from taigun.parsers.file import FileParser
 from taigun.models import Story, Issue, Task, Epic
 
 
@@ -92,7 +92,10 @@ class TestBodyParserParse:
         assert priority is None
 
 
-class TestParseFile:
+class TestFileParser:
+    def setup_method(self):
+        self.parser = FileParser()
+
     def test_returns_populated_story(self, tmp_path):
         """Setup: markdown file with story frontmatter and body.
         Expectations: returns Story with subject and description set.
@@ -103,7 +106,7 @@ class TestParseFile:
             + "## Do the thing\n\n"
             "### Acceptance Criteria\n- it works\n"
         )
-        result = parse_file(f)
+        result = self.parser.parse(f)
         assert isinstance(result, Story)
         assert result.subject == "Do the thing"
         assert "### Acceptance Criteria" in result.description
@@ -116,7 +119,7 @@ class TestParseFile:
         f = tmp_path / "ticket.md"
         f.write_text(FRONTMATTER_STORY + "### Some Section\nContent\n")
         with pytest.raises(ParseError):
-            parse_file(f)
+            self.parser.parse(f)
 
     def test_priority_from_body_sets_field(self, tmp_path):
         """Setup: story file with ### Priority section in body.
@@ -128,7 +131,7 @@ class TestParseFile:
             + "## Title\n\n"
             "### Priority\nHigh\n"
         )
-        result = parse_file(f)
+        result = self.parser.parse(f)
         assert result.priority == "High"
 
     def test_body_priority_overrides_frontmatter(self, tmp_path):
@@ -141,7 +144,7 @@ class TestParseFile:
             "## Title\n\n"
             "### Priority\nHigh\n"
         )
-        result = parse_file(f)
+        result = self.parser.parse(f)
         assert result.priority == "High"
 
     def test_epic_priority_section_ignored(self, tmp_path):
@@ -154,7 +157,7 @@ class TestParseFile:
             + "## Epic Title\n\n"
             "### Priority\nHigh\n"
         )
-        result = parse_file(f)
+        result = self.parser.parse(f)
         assert isinstance(result, Epic)
         assert not hasattr(result, "priority")
 
@@ -168,7 +171,7 @@ class TestParseFile:
             + "## Task Title\n\n"
             "### Priority\nHigh\n"
         )
-        result = parse_file(f)
+        result = self.parser.parse(f)
         assert isinstance(result, Task)
         assert not hasattr(result, "priority")
 
@@ -183,6 +186,6 @@ class TestParseFile:
             "### Acceptance Criteria\n- done\n\n"
             "### Priority\nHigh\n"
         )
-        result = parse_file(f)
+        result = self.parser.parse(f)
         assert "### Acceptance Criteria" in result.description
         assert "### Priority" not in result.description

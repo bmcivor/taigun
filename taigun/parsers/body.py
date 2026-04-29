@@ -30,6 +30,7 @@ class BodyParser:
             ParseError: If no ``## Title`` heading is found in the body.
         """
         title_match = re.search(r"^## (.+)$", body, re.MULTILINE)
+
         if title_match is None:
             raise ParseError("Body is missing a ## Title heading")
         subject = title_match.group(1).strip()
@@ -47,4 +48,5 @@ class BodyParser:
                 description_parts.append(f"### {heading}\n{content}")
 
         description = "\n\n".join(description_parts)
+
         return subject, description, priority
