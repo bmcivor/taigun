@@ -45,6 +45,7 @@ class TestConfigManagerLoad:
         """
         write_config(config_path, {"default": VALID_PROFILE})
         profile = manager.load()
+
         assert profile.host == "localhost"
         assert profile.port == 5432
         assert profile.database == "taiga"
@@ -58,6 +59,7 @@ class TestConfigManagerLoad:
         """
         write_config(config_path, {"profiles": {"lab": VALID_PROFILE}})
         profile = manager.load(profile="lab")
+
         assert profile.host == "localhost"
 
     def test_missing_default_profile_raises(self, manager, config_path):
@@ -92,6 +94,7 @@ class TestConfigManagerLoad:
         profile_with_str_port = {**VALID_PROFILE, "port": "5432"}
         write_config(config_path, {"default": profile_with_str_port})
         profile = manager.load()
+
         assert isinstance(profile.port, int)
 
 
@@ -102,6 +105,7 @@ class TestConfigManagerSave:
         """
         profile = Profile(**VALID_PROFILE)
         manager.save(profile)
+
         assert manager.load() == profile
 
     def test_saves_named_profile(self, manager):
@@ -110,6 +114,7 @@ class TestConfigManagerSave:
         """
         profile = Profile(**VALID_PROFILE)
         manager.save(profile, name="lab")
+
         assert manager.load(profile="lab") == profile
 
     def test_creates_config_directory(self, manager, config_path):
@@ -118,6 +123,7 @@ class TestConfigManagerSave:
         """
         assert not config_path.exists()
         manager.save(Profile(**VALID_PROFILE))
+
         assert config_path.exists()
 
     def test_preserves_existing_profiles(self, manager):
@@ -127,5 +133,6 @@ class TestConfigManagerSave:
         profile = Profile(**VALID_PROFILE)
         manager.save(profile)
         manager.save(Profile(**{**VALID_PROFILE, "host": "otherhost"}), name="other")
+
         assert manager.load().host == "localhost"
         assert manager.load(profile="other").host == "otherhost"

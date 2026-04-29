@@ -77,7 +77,7 @@ class TestResolveStatus:
 
     def test_queries_correct_table_for_each_type(self):
         """Setup: each valid ticket type.
-        Expectations: query references the correct status table.
+        Expectations: query targets the correct status table exactly.
         """
         expected = {
             "story": "projects_userstorystatus",
@@ -90,7 +90,7 @@ class TestResolveStatus:
             resolver.resolve_status(1, "New", ticket_type)
             sql = cursor.execute.call_args[0][0]
 
-            assert table in sql
+            assert sql == f"SELECT id FROM {table} WHERE project_id = %s AND LOWER(name) = LOWER(%s)"
 
 
 class TestResolvePriority:
@@ -128,7 +128,7 @@ class TestResolvePriority:
 
     def test_fallback_logs_warning(self, caplog):
         """Setup: priority name not found.
-        Expectations: warning logged naming the priority.
+        Expectations: warning logged with exact message naming the priority and project.
         """
         mock_cursor = MagicMock()
         mock_cursor.fetchone.side_effect = [None, (9,)]
@@ -138,7 +138,7 @@ class TestResolvePriority:
         with caplog.at_level(logging.WARNING):
             resolver.resolve_priority(1, "Unknown")
 
-        assert "Unknown" in caplog.text
+        assert caplog.messages == ["Priority 'Unknown' not found for project 1, falling back to default"]
 
 
 class TestResolveIssueType:

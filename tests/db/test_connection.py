@@ -23,7 +23,7 @@ class TestConnectionManager:
         Expectations: context manager yields the connection object.
         """
         mock_conn = MagicMock()
-        with patch("taigun.db.psycopg2.connect", return_value=mock_conn):
+        with patch("taigun.db.connection.psycopg2.connect", return_value=mock_conn):
             manager = ConnectionManager(PROFILE)
             with manager.connect() as conn:
                 assert conn is mock_conn
@@ -33,7 +33,7 @@ class TestConnectionManager:
         Expectations: commit is called on the connection.
         """
         mock_conn = MagicMock()
-        with patch("taigun.db.psycopg2.connect", return_value=mock_conn):
+        with patch("taigun.db.connection.psycopg2.connect", return_value=mock_conn):
             with ConnectionManager(PROFILE).connect():
                 pass
 
@@ -44,7 +44,7 @@ class TestConnectionManager:
         Expectations: rollback is called and exception is re-raised.
         """
         mock_conn = MagicMock()
-        with patch("taigun.db.psycopg2.connect", return_value=mock_conn):
+        with patch("taigun.db.connection.psycopg2.connect", return_value=mock_conn):
             with pytest.raises(RuntimeError):
                 with ConnectionManager(PROFILE).connect():
                     raise RuntimeError("something went wrong")
@@ -57,7 +57,7 @@ class TestConnectionManager:
         Expectations: connection is closed.
         """
         mock_conn = MagicMock()
-        with patch("taigun.db.psycopg2.connect", return_value=mock_conn):
+        with patch("taigun.db.connection.psycopg2.connect", return_value=mock_conn):
             with ConnectionManager(PROFILE).connect():
                 pass
 
@@ -68,7 +68,7 @@ class TestConnectionManager:
         Expectations: connection is still closed.
         """
         mock_conn = MagicMock()
-        with patch("taigun.db.psycopg2.connect", return_value=mock_conn):
+        with patch("taigun.db.connection.psycopg2.connect", return_value=mock_conn):
             with pytest.raises(RuntimeError):
                 with ConnectionManager(PROFILE).connect():
                     raise RuntimeError("something went wrong")
@@ -79,7 +79,7 @@ class TestConnectionManager:
         """Setup: psycopg2.connect raises OperationalError.
         Expectations: SystemExit raised with a clear message.
         """
-        with patch("taigun.db.psycopg2.connect", side_effect=psycopg2.OperationalError("timeout")):
+        with patch("taigun.db.connection.psycopg2.connect", side_effect=psycopg2.OperationalError("timeout")):
             with pytest.raises(SystemExit, match="Could not connect"):
                 with ConnectionManager(PROFILE).connect():
                     pass
@@ -89,7 +89,7 @@ class TestConnectionManager:
         Expectations: psycopg2.connect called with matching arguments.
         """
         mock_conn = MagicMock()
-        with patch("taigun.db.psycopg2.connect", return_value=mock_conn) as mock_connect:
+        with patch("taigun.db.connection.psycopg2.connect", return_value=mock_conn) as mock_connect:
             with ConnectionManager(PROFILE).connect():
                 pass
 

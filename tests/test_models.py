@@ -7,6 +7,7 @@ class TestStory:
         Expectations: instantiates without error.
         """
         s = Story(project="my-project", subject="Do something")
+
         assert s.project == "my-project"
         assert s.subject == "Do something"
 
@@ -15,6 +16,7 @@ class TestStory:
         Expectations: all optional fields are None or empty list.
         """
         s = Story(project="p", subject="s")
+
         assert s.description == ""
         assert s.epic is None
         assert s.assignee is None
@@ -38,6 +40,7 @@ class TestStory:
             status="New",
             priority="High",
         )
+
         assert s.epic == 3
         assert s.tags == ["backend", "auth"]
         assert s.priority == "High"
@@ -49,6 +52,7 @@ class TestIssue:
         Expectations: instantiates without error.
         """
         i = Issue(project="p", subject="s")
+
         assert i.project == "p"
         assert i.subject == "s"
 
@@ -57,6 +61,7 @@ class TestIssue:
         Expectations: fields stored correctly.
         """
         i = Issue(project="p", subject="s", issue_type="Bug", severity="High")
+
         assert i.issue_type == "Bug"
         assert i.severity == "High"
 
@@ -65,6 +70,7 @@ class TestIssue:
         Expectations: all optional fields are None or empty list.
         """
         i = Issue(project="p", subject="s")
+
         assert i.issue_type is None
         assert i.severity is None
         assert i.assignee is None
@@ -80,6 +86,7 @@ class TestTask:
         Expectations: instantiates without error.
         """
         t = Task(project="p", subject="s")
+
         assert t.project == "p"
         assert t.subject == "s"
 
@@ -88,6 +95,7 @@ class TestTask:
         Expectations: parent stored correctly.
         """
         t = Task(project="p", subject="s", parent=7)
+
         assert t.parent == 7
 
     def test_optional_fields_default_to_none(self):
@@ -95,6 +103,7 @@ class TestTask:
         Expectations: all optional fields are None or empty list.
         """
         t = Task(project="p", subject="s")
+
         assert t.parent is None
         assert t.epic is None
         assert t.assignee is None
@@ -109,6 +118,7 @@ class TestEpic:
         Expectations: instantiates without error.
         """
         e = Epic(project="p", subject="s")
+
         assert e.project == "p"
         assert e.subject == "s"
 
@@ -117,6 +127,7 @@ class TestEpic:
         Expectations: all optional fields are None or empty list.
         """
         e = Epic(project="p", subject="s")
+
         assert e.description == ""
         assert e.assignee is None
         assert e.tags == []
@@ -128,6 +139,7 @@ class TestEpic:
         Expectations: Epic has no issue_type or severity attributes.
         """
         e = Epic(project="p", subject="s")
+
         assert not hasattr(e, "issue_type")
         assert not hasattr(e, "severity")
 
@@ -136,4 +148,5 @@ class TestEpic:
         Expectations: Epic has no parent attribute.
         """
         e = Epic(project="p", subject="s")
+
         assert not hasattr(e, "parent")
