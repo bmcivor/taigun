@@ -50,6 +50,7 @@ class TestFrontmatterParserParse:
         """
         doc = make_doc("type: story\nproject: my-project\nassignee: blake\n")
         metadata, body = self.parser.parse(doc)
+
         assert metadata["type"] == "story"
         assert metadata["project"] == "my-project"
         assert metadata["assignee"] == "blake"
@@ -60,6 +61,7 @@ class TestFrontmatterParserParse:
         """
         doc = make_doc("type: story\nproject: p\ntags: backend, auth\n")
         metadata, _ = self.parser.parse(doc)
+
         assert metadata["tags"] == ["backend", "auth"]
 
     def test_tags_as_list(self):
@@ -68,6 +70,7 @@ class TestFrontmatterParserParse:
         """
         doc = make_doc("type: story\nproject: p\ntags:\n  - backend\n  - auth\n")
         metadata, _ = self.parser.parse(doc)
+
         assert metadata["tags"] == ["backend", "auth"]
 
     def test_body_returned(self):
@@ -76,7 +79,8 @@ class TestFrontmatterParserParse:
         """
         doc = make_doc("type: story\nproject: p\n", "## My Title\n\nSome content.\n")
         _, body = self.parser.parse(doc)
-        assert "My Title" in body
+
+        assert body == "## My Title\n\nSome content."
 
 
 class TestFrontmatterParserBuildPartial:
@@ -89,6 +93,7 @@ class TestFrontmatterParserBuildPartial:
         """
         metadata = {"type": "story", "project": "p", "tags": [], "epic": 2, "priority": "High"}
         result = self.parser.build_partial(metadata)
+
         assert isinstance(result, Story)
         assert result.project == "p"
         assert result.epic == 2
@@ -104,6 +109,7 @@ class TestFrontmatterParserBuildPartial:
             "issue_type": "Bug", "severity": "High",
         }
         result = self.parser.build_partial(metadata)
+
         assert isinstance(result, Issue)
         assert result.issue_type == "Bug"
         assert result.severity == "High"
@@ -114,6 +120,7 @@ class TestFrontmatterParserBuildPartial:
         """
         metadata = {"type": "task", "project": "p", "tags": [], "parent": 5}
         result = self.parser.build_partial(metadata)
+
         assert isinstance(result, Task)
         assert result.parent == 5
 
@@ -123,6 +130,7 @@ class TestFrontmatterParserBuildPartial:
         """
         metadata = {"type": "epic", "project": "p", "tags": [], "color": "#ff0000"}
         result = self.parser.build_partial(metadata)
+
         assert isinstance(result, Epic)
         assert result.color == "#ff0000"
 
@@ -132,6 +140,7 @@ class TestFrontmatterParserBuildPartial:
         """
         metadata = {"type": "story", "project": "p", "tags": []}
         result = self.parser.build_partial(metadata)
+
         assert result.assignee is None
         assert result.milestone is None
         assert result.epic is None
