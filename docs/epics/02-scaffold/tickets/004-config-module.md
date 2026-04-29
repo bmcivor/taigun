@@ -1,4 +1,4 @@
-## 4. Config module
+## ~~4. Config module~~ (Done)
 
 **Epic:** E2 — Project scaffold
 
