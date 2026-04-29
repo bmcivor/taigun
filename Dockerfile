@@ -8,7 +8,7 @@ COPY pyproject.toml uv.lock ./
 
 FROM base AS test
 
-RUN uv sync --frozen --group dev
-
 COPY taigun/ ./taigun/
 COPY tests/ ./tests/
+
+RUN uv sync --frozen --group dev
