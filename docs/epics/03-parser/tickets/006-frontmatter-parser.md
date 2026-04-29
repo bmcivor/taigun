@@ -1,4 +1,4 @@
-## 6. Frontmatter parser
+## ~~6. Frontmatter parser~~ (Done)
 
 **Epic:** E3 — Markdown parser
 

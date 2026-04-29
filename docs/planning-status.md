@@ -14,10 +14,13 @@ Last updated: 2026-04-29
 - 004 complete: config module (`load_config`, `save_config`), tests, Dockerfile, docker-compose,
   Jenkinsfile — CI running on MRs in Jenkins
 - `jenkins_url` fixed to include port 8083 in vertex-studio
+- 005 complete: `models.py` — Story, Issue, Task, Epic dataclasses
+- 006 complete: `parser.py` — frontmatter parsing, validation, partial model construction,
+  `ParseError` in `exceptions.py`
 
 ## What's next
 
-- E3: markdown parser (005–007)
+- 007: body parser (parse_file entry point, subject from ## Title, description from ### sections)
 
 ## Key decisions
 
