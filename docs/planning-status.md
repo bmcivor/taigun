@@ -1,6 +1,6 @@
 # Planning status
 
-Last updated: 2026-04-28
+Last updated: 2026-04-29
 
 ## What's done
 
@@ -11,10 +11,13 @@ Last updated: 2026-04-28
   refactored to use `tailscale_hostname` variable — all merged to master in vertex-studio
 - DB connectivity verified from dev machine over Tailscale (002)
 - 003 complete: `pyproject.toml`, `taigun/` package structure, stub CLI, `uv.lock`
+- 004 complete: config module (`load_config`, `save_config`), tests, Dockerfile, docker-compose,
+  Jenkinsfile — CI running on MRs in Jenkins
+- `jenkins_url` fixed to include port 8083 in vertex-studio
 
 ## What's next
 
-- 004: config module
+- E3: markdown parser (005–007)
 
 ## Key decisions
 
