@@ -1,4 +1,4 @@
-## 5. Ticket dataclasses
+## ~~5. Ticket dataclasses~~ (Done)
 
 **Epic:** E3 — Markdown parser
 
