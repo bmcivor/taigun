@@ -1,6 +1,6 @@
 # Planning status
 
-Last updated: 2026-04-29
+Last updated: 2026-04-30
 
 ## What's done
 
@@ -15,12 +15,17 @@ Last updated: 2026-04-29
   Jenkinsfile — CI running on MRs in Jenkins
 - `jenkins_url` fixed to include port 8083 in vertex-studio
 - 005 complete: `models.py` — Story, Issue, Task, Epic dataclasses
-- 006 complete: `parser.py` — frontmatter parsing, validation, partial model construction,
-  `ParseError` in `exceptions.py`
+- 006 complete: `parsers/frontmatter.py` — FrontmatterParser; `exceptions.py` — ParseError;
+  parsers refactored to class-based design under `taigun/parsers/`
+- 007 complete: `parsers/body.py` — BodyParser; `parsers/file.py` — FileParser
+- `config.py` refactored to ConfigManager class (injectable path)
+- E3 complete
+- 008 complete: `db.py` — ConnectionManager; commit/rollback context manager
+- 009 complete: `resolver.py` — Resolver class; ResolveError in `exceptions.py`
 
 ## What's next
 
-- 007: body parser (parse_file entry point, subject from ## Title, description from ### sections)
+- 010: ref allocation
 
 ## Key decisions
 
