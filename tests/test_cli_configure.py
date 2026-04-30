@@ -1,10 +1,12 @@
 from contextlib import contextmanager
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 from taigun.cli import app
+from taigun.config import ConfigManager, Profile
 
 runner = CliRunner()
 
@@ -22,6 +24,10 @@ PROFILE_PROMPT_DEFAULT = "default"
 
 def make_inputs(*parts: list[str]) -> str:
     return "\n".join(line for part in parts for line in part)
+
+
+def make_config(tmp_path: Path) -> ConfigManager:
+    return ConfigManager(path=tmp_path / "config.toml")
 
 
 @contextmanager
@@ -42,21 +48,13 @@ def mock_connection_fail(message: str = "Could not connect to database: timeout"
 
 
 @contextmanager
-def mock_no_existing_profile():
-    with patch("taigun.cli.ConfigManager") as mock_cfg:
-        mock_cfg.return_value.load.side_effect = SystemExit("not found")
-        yield mock_cfg
-
-
-@contextmanager
-def mock_existing_profile():
-    with patch("taigun.cli.ConfigManager") as mock_cfg:
-        mock_cfg.return_value.load.return_value = MagicMock()
-        yield mock_cfg
+def patch_config(config: ConfigManager):
+    with patch("taigun.cli.ConfigManager", return_value=config):
+        yield config
 
 
 class TestConfigureHappyPath:
-    @pytest.mark.parametrize("profile_flag,profile_input,expected_save_name", [
+    @pytest.mark.parametrize("profile_flag,profile_input,expected_profile_name", [
         # --profile flag skips profile name prompt
         (["--profile", "work"], [], "work"),
         # no flag: accept default profile name
@@ -64,41 +62,46 @@ class TestConfigureHappyPath:
         # no flag: enter a custom profile name
         ([], ["staging"], "staging"),
     ])
-    def test_saves_profile(self, profile_flag, profile_input, expected_save_name):
+    def test_saves_profile(self, tmp_path, profile_flag, profile_input, expected_profile_name):
         """Setup: valid inputs, connection succeeds, no existing profile.
-        Expectations: save called with correct profile name; exit code 0.
+        Expectations: profile loadable after save; exit code 0.
         """
+        config = make_config(tmp_path)
         inputs = make_inputs(profile_input, VALID_INPUTS)
-        with mock_no_existing_profile() as mock_cfg, mock_connection_ok():
+
+        with patch_config(config), mock_connection_ok():
             result = runner.invoke(app, ["configure"] + profile_flag, input=inputs)
 
         assert result.exit_code == 0
-        mock_cfg.return_value.save.assert_called_once()
-        call_args = mock_cfg.return_value.save.call_args
-        name_arg = call_args.args[1] if len(call_args.args) > 1 else call_args.kwargs.get("name")
-        assert name_arg == expected_save_name
+        loaded = config.load(expected_profile_name)
+        assert loaded.host == "myhost"
+        assert loaded.acting_user == "admin"
 
-    def test_prints_success(self):
+    def test_prints_success(self, tmp_path):
         """Setup: valid inputs, connection succeeds.
         Expectations: output contains success message.
         """
+        config = make_config(tmp_path)
         inputs = make_inputs([PROFILE_PROMPT_DEFAULT], VALID_INPUTS)
-        with mock_no_existing_profile(), mock_connection_ok():
+
+        with patch_config(config), mock_connection_ok():
             result = runner.invoke(app, ["configure"], input=inputs)
 
         assert "saved" in result.output
 
-    def test_profile_saved_with_correct_fields(self):
+    def test_profile_saved_with_correct_fields(self, tmp_path):
         """Setup: specific input values.
-        Expectations: Profile passed to save has all fields set correctly.
+        Expectations: loaded profile has all fields set correctly.
         """
+        config = make_config(tmp_path)
         inputs = make_inputs([PROFILE_PROMPT_DEFAULT], [
             "db.example.com", "5433", "mydb", "myuser", "mypass", "myactor"
         ])
-        with mock_no_existing_profile() as mock_cfg, mock_connection_ok():
+
+        with patch_config(config), mock_connection_ok():
             runner.invoke(app, ["configure"], input=inputs)
 
-        profile = mock_cfg.return_value.save.call_args.args[0]
+        profile = config.load(None)
         assert profile.host == "db.example.com"
         assert profile.port == 5433
         assert profile.database == "mydb"
@@ -108,65 +111,79 @@ class TestConfigureHappyPath:
 
 
 class TestConfigureConnectionFailure:
-    def test_exits_nonzero_on_failure(self):
+    def test_exits_nonzero_on_failure(self, tmp_path):
         """Setup: connection fails.
         Expectations: exit code is 1.
         """
+        config = make_config(tmp_path)
         inputs = make_inputs([PROFILE_PROMPT_DEFAULT], VALID_INPUTS)
-        with mock_no_existing_profile(), mock_connection_fail():
+
+        with patch_config(config), mock_connection_fail():
             result = runner.invoke(app, ["configure"], input=inputs)
 
         assert result.exit_code == 1
 
-    def test_prints_error_on_failure(self):
+    def test_prints_error_on_failure(self, tmp_path):
         """Setup: connection fails with a specific message.
         Expectations: error message appears in output.
         """
+        config = make_config(tmp_path)
         inputs = make_inputs([PROFILE_PROMPT_DEFAULT], VALID_INPUTS)
-        with mock_no_existing_profile(), mock_connection_fail("Could not connect to database: timeout"):
+
+        with patch_config(config), mock_connection_fail("Could not connect to database: timeout"):
             result = runner.invoke(app, ["configure"], input=inputs)
 
         assert "Could not connect to database: timeout" in result.output
 
-    def test_does_not_save_on_failure(self):
+    def test_does_not_save_on_failure(self, tmp_path):
         """Setup: connection fails.
-        Expectations: save is never called.
+        Expectations: config file is not written.
         """
+        config = make_config(tmp_path)
         inputs = make_inputs([PROFILE_PROMPT_DEFAULT], VALID_INPUTS)
-        with mock_no_existing_profile() as mock_cfg, mock_connection_fail():
+
+        with patch_config(config), mock_connection_fail():
             runner.invoke(app, ["configure"], input=inputs)
 
-        mock_cfg.return_value.save.assert_not_called()
+        assert not config._path.exists()
 
 
 class TestConfigureExistingProfile:
-    @pytest.mark.parametrize("confirm_input,expect_save,expect_exit_zero", [
-        ("y", True, True),   # confirm overwrite → save
-        ("n", False, True),  # decline overwrite → abort cleanly
+    @pytest.mark.parametrize("confirm_input,expect_saved", [
+        ("y", True),   # confirm overwrite → save
+        ("n", False),  # decline overwrite → abort cleanly
     ])
-    def test_overwrite_prompt(self, confirm_input, expect_save, expect_exit_zero):
+    def test_overwrite_prompt(self, tmp_path, confirm_input, expect_saved):
         """Setup: profile already exists; user confirms or declines overwrite.
-        Expectations: save called/not called; exit code correct.
+        Expectations: profile saved or not; exit code 0 either way.
         """
+        config = make_config(tmp_path)
+        # Write an existing profile with different host
+        config.save(Profile("oldhost", 5432, "taiga", "taiga", "secret", "admin"), name=None)
+
         inputs = make_inputs(
             [PROFILE_PROMPT_DEFAULT],
             [confirm_input] + (VALID_INPUTS if confirm_input == "y" else []),
         )
-        with mock_existing_profile() as mock_cfg, mock_connection_ok():
+        with patch_config(config), mock_connection_ok():
             result = runner.invoke(app, ["configure"], input=inputs)
 
         assert result.exit_code == 0
-        if expect_save:
-            mock_cfg.return_value.save.assert_called_once()
+        loaded = config.load(None)
+        if expect_saved:
+            assert loaded.host == "myhost"
         else:
-            mock_cfg.return_value.save.assert_not_called()
+            assert loaded.host == "oldhost"
 
-    def test_profile_flag_still_checks_existing(self):
+    def test_profile_flag_still_checks_existing(self, tmp_path):
         """Setup: --profile work passed; profile 'work' already exists; user declines.
-        Expectations: save not called.
+        Expectations: existing profile unchanged.
         """
-        with mock_existing_profile() as mock_cfg, mock_connection_ok():
+        config = make_config(tmp_path)
+        config.save(Profile("oldhost", 5432, "taiga", "taiga", "secret", "admin"), name="work")
+
+        with patch_config(config), mock_connection_ok():
             result = runner.invoke(app, ["configure", "--profile", "work"], input="n\n")
 
         assert result.exit_code == 0
-        mock_cfg.return_value.save.assert_not_called()
+        assert config.load("work").host == "oldhost"
