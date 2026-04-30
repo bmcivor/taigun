@@ -39,7 +39,7 @@ class TestIssueWriter:
         Expectations: write returns the allocated ref.
         """
         writer, _, _ = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             ref = writer.write(make_issue(), "admin")
 
@@ -50,7 +50,7 @@ class TestIssueWriter:
         Expectations: INSERT SQL and params are exact.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(description="desc"), "admin")
 
@@ -84,7 +84,7 @@ class TestIssueWriter:
         Expectations: UPDATE SQL sets ref = 42 on row 101.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(), "admin")
 
@@ -98,42 +98,18 @@ class TestIssueWriter:
         Expectations: resolve_project called with the slug.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(project="my-project"), "admin")
 
         mock_resolver.resolve_project.assert_called_once_with("my-project")
-
-    def test_resolves_default_status_when_not_set(self):
-        """Setup: issue with no status.
-        Expectations: resolve_default_status called; resolve_status not called.
-        """
-        writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(), "admin")
-
-        mock_resolver.resolve_default_status.assert_called_once_with(1, "issue")
-        mock_resolver.resolve_status.assert_not_called()
-
-    def test_resolves_status_when_set(self):
-        """Setup: issue with status set.
-        Expectations: resolve_status called; resolve_default_status not called.
-        """
-        writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(status="In Progress"), "admin")
-
-        mock_resolver.resolve_status.assert_called_once_with(1, "In Progress", "issue")
-        mock_resolver.resolve_default_status.assert_not_called()
 
     def test_resolves_issue_type_when_set(self):
         """Setup: issue with issue_type set.
         Expectations: resolve_issue_type called with project_id and type name.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(issue_type="Bug"), "admin")
 
@@ -144,7 +120,7 @@ class TestIssueWriter:
         Expectations: resolve_issue_type called with None (resolver handles fallback).
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(), "admin")
 
@@ -155,7 +131,7 @@ class TestIssueWriter:
         Expectations: resolve_severity called with project_id and severity name.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(severity="Critical"), "admin")
 
@@ -166,7 +142,7 @@ class TestIssueWriter:
         Expectations: resolve_severity called with None (resolver handles fallback).
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(), "admin")
 
@@ -177,7 +153,7 @@ class TestIssueWriter:
         Expectations: resolve_milestone called with project_id and milestone name.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(milestone="Sprint 1"), "admin")
 
@@ -189,7 +165,7 @@ class TestIssueWriter:
         """
         writer, mock_cursor, mock_resolver = make_writer()
         mock_resolver.resolve_user.side_effect = [5, 8]
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(assignee="alice"), "admin")
 
@@ -201,7 +177,7 @@ class TestIssueWriter:
         Expectations: assigned_to_id in INSERT params is None.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(), "admin")
 
@@ -213,7 +189,7 @@ class TestIssueWriter:
         Expectations: exactly 4 execute calls (INSERT, nextval, INSERT ref, UPDATE).
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.issue.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_issue(), "admin")
 

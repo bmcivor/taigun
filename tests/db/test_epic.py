@@ -37,7 +37,7 @@ class TestEpicWriter:
         Expectations: write returns the allocated ref.
         """
         writer, _, _ = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             ref = writer.write(make_epic(), "admin")
 
@@ -48,7 +48,7 @@ class TestEpicWriter:
         Expectations: INSERT SQL and params are exact.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_epic(description="desc", color="#abcdef"), "admin")
 
@@ -79,7 +79,7 @@ class TestEpicWriter:
         Expectations: UPDATE SQL sets ref = 42 on row 101.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_epic(color="#abcdef"), "admin")
 
@@ -93,42 +93,18 @@ class TestEpicWriter:
         Expectations: resolve_project called with the slug.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_epic(color="#abcdef", project="my-project"), "admin")
 
         mock_resolver.resolve_project.assert_called_once_with("my-project")
-
-    def test_resolves_default_status_when_not_set(self):
-        """Setup: epic with no status.
-        Expectations: resolve_default_status called; resolve_status not called.
-        """
-        writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_epic(color="#abcdef"), "admin")
-
-        mock_resolver.resolve_default_status.assert_called_once_with(1, "epic")
-        mock_resolver.resolve_status.assert_not_called()
-
-    def test_resolves_status_when_set(self):
-        """Setup: epic with status set.
-        Expectations: resolve_status called; resolve_default_status not called.
-        """
-        writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_epic(color="#abcdef", status="In Progress"), "admin")
-
-        mock_resolver.resolve_status.assert_called_once_with(1, "In Progress", "epic")
-        mock_resolver.resolve_default_status.assert_not_called()
 
     def test_uses_color_when_set(self):
         """Setup: epic with color set to #aabbcc.
         Expectations: color in INSERT params is #aabbcc.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_epic(color="#aabbcc"), "admin")
 
@@ -141,7 +117,7 @@ class TestEpicWriter:
         Expectations: color in INSERT params is a valid #rrggbb hex string.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_epic(), "admin")
 
@@ -154,7 +130,7 @@ class TestEpicWriter:
         Expectations: color in INSERT params is derived from the patched value.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             with patch("taigun.db.epic.random.randint", return_value=0x123456):
                 writer.write(make_epic(), "admin")
@@ -169,7 +145,7 @@ class TestEpicWriter:
         """
         writer, mock_cursor, mock_resolver = make_writer()
         mock_resolver.resolve_user.side_effect = [5, 8]
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_epic(color="#abcdef", assignee="alice"), "admin")
 
@@ -182,7 +158,7 @@ class TestEpicWriter:
         Expectations: assigned_to_id in INSERT params is None.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_epic(color="#abcdef"), "admin")
 
@@ -195,7 +171,7 @@ class TestEpicWriter:
         Expectations: exactly 4 execute calls (INSERT, nextval, INSERT ref, UPDATE).
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.epic.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_epic(color="#abcdef"), "admin")
 

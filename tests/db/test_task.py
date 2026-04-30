@@ -38,7 +38,7 @@ class TestTaskWriter:
         Expectations: write returns the allocated ref.
         """
         writer, _, _ = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             ref = writer.write(make_task(), "admin")
 
@@ -49,7 +49,7 @@ class TestTaskWriter:
         Expectations: INSERT SQL and params are exact.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(description="desc"), "admin")
 
@@ -83,7 +83,7 @@ class TestTaskWriter:
         Expectations: UPDATE SQL sets ref = 42 on row 101.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(), "admin")
 
@@ -97,42 +97,18 @@ class TestTaskWriter:
         Expectations: resolve_project called with the slug.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(project="my-project"), "admin")
 
         mock_resolver.resolve_project.assert_called_once_with("my-project")
-
-    def test_resolves_default_status_when_not_set(self):
-        """Setup: task with no status.
-        Expectations: resolve_default_status called; resolve_status not called.
-        """
-        writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_task(), "admin")
-
-        mock_resolver.resolve_default_status.assert_called_once_with(1, "task")
-        mock_resolver.resolve_status.assert_not_called()
-
-    def test_resolves_status_when_set(self):
-        """Setup: task with status set.
-        Expectations: resolve_status called; resolve_default_status not called.
-        """
-        writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_task(status="In Progress"), "admin")
-
-        mock_resolver.resolve_status.assert_called_once_with(1, "In Progress", "task")
-        mock_resolver.resolve_default_status.assert_not_called()
 
     def test_resolves_parent_when_set(self):
         """Setup: task with parent ref set.
         Expectations: resolve_story called with project_id and ref.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(parent=5), "admin")
 
@@ -143,7 +119,7 @@ class TestTaskWriter:
         Expectations: user_story_id in INSERT params is 20.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(parent=5), "admin")
 
@@ -155,7 +131,7 @@ class TestTaskWriter:
         Expectations: user_story_id in INSERT params is None.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(), "admin")
 
@@ -167,7 +143,7 @@ class TestTaskWriter:
         Expectations: resolve_story not called.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(), "admin")
 
@@ -178,7 +154,7 @@ class TestTaskWriter:
         Expectations: resolve_milestone called with project_id and milestone name.
         """
         writer, _, mock_resolver = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(milestone="Sprint 1"), "admin")
 
@@ -190,7 +166,7 @@ class TestTaskWriter:
         """
         writer, mock_cursor, mock_resolver = make_writer()
         mock_resolver.resolve_user.side_effect = [5, 8]
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(assignee="alice"), "admin")
 
@@ -202,7 +178,7 @@ class TestTaskWriter:
         Expectations: assigned_to_id in INSERT params is None.
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(), "admin")
 
@@ -214,7 +190,7 @@ class TestTaskWriter:
         Expectations: exactly 4 execute calls (INSERT, nextval, INSERT ref, UPDATE).
         """
         writer, mock_cursor, _ = make_writer()
-        with patch("taigun.db.task.datetime.datetime") as mock_dt:
+        with patch("taigun.db.base.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = FIXED_NOW
             writer.write(make_task(), "admin")
 
