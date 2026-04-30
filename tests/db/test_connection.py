@@ -84,6 +84,30 @@ class TestConnectionManager:
                 with ConnectionManager(PROFILE).connect():
                     pass
 
+    def test_dry_run_rolls_back_on_clean_exit(self):
+        """Setup: dry_run=True; context block completes without exception.
+        Expectations: rollback called, commit not called.
+        """
+        mock_conn = MagicMock()
+        with patch("taigun.db.connection.psycopg2.connect", return_value=mock_conn):
+            with ConnectionManager(PROFILE).connect(dry_run=True):
+                pass
+
+        mock_conn.rollback.assert_called_once()
+        mock_conn.commit.assert_not_called()
+
+    def test_dry_run_false_still_commits(self):
+        """Setup: dry_run=False (default); context block completes without exception.
+        Expectations: commit called, rollback not called.
+        """
+        mock_conn = MagicMock()
+        with patch("taigun.db.connection.psycopg2.connect", return_value=mock_conn):
+            with ConnectionManager(PROFILE).connect(dry_run=False):
+                pass
+
+        mock_conn.commit.assert_called_once()
+        mock_conn.rollback.assert_not_called()
+
     def test_connect_passes_correct_credentials(self):
         """Setup: profile with known credentials.
         Expectations: psycopg2.connect called with matching arguments.
