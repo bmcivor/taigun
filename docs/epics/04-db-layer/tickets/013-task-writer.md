@@ -1,4 +1,4 @@
-## 13. Task writer
+## ~~13. Task writer~~ (Done)
 
 **Epic:** E4 — DB layer
 

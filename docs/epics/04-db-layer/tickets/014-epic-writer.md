@@ -1,4 +1,4 @@
-## 14. Epic writer
+## ~~14. Epic writer~~ (Done)
 
 **Epic:** E4 — DB layer
 

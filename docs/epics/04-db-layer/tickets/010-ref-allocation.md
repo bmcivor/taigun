@@ -1,4 +1,4 @@
-## 10. Ref allocation
+## ~~10. Ref allocation~~ (Done)
 
 **Epic:** E4 — DB layer
 
