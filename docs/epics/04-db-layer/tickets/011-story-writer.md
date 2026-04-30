@@ -1,4 +1,4 @@
-## 11. User story writer
+## ~~11. User story writer~~ (Done)
 
 **Epic:** E4 — DB layer
 

@@ -1,6 +1,6 @@
 # Planning status
 
-Last updated: 2026-04-30
+Last updated: 2026-05-01
 
 ## What's done
 
@@ -24,10 +24,15 @@ Last updated: 2026-04-30
 - 009 complete: `resolver.py` — Resolver class; ResolveError in `exceptions.py`
 - 010 complete: `db/ref.py` — `allocate_ref` for per-project ref counters
 - 011 complete: `db/story.py` — `insert_story` writer; full transaction, returns ref
+- 012 complete: `db/issue.py` — IssueWriter; resolver fallback for issue_type and severity
+- 013 complete: `db/task.py` — TaskWriter; resolve_story added to Resolver
+- 014 complete: `db/epic.py` — EpicWriter; random color generation
+- BaseWriter ABC extracted to `db/base.py`; shared logic (_resolve_common, _resolve_status,
+  _allocate_and_set_ref) consolidated; status tests moved to test_base.py; E4 complete
 
 ## What's next
 
-- 012: issue writer (`db/issue.py`)
+- 015: configure command (E5 CLI)
 
 ## Key decisions
 

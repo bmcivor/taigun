@@ -1,4 +1,4 @@
-## 12. Issue writer
+## ~~12. Issue writer~~ (Done)
 
 **Epic:** E4 — DB layer
 
