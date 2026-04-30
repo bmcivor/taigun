@@ -218,39 +218,133 @@ class TestResolveMilestone:
 
 
 class TestResolveIssueType:
-    def test_returns_issue_type_id(self):
-        """Setup: issue type exists.
-        Expectations: returns the issue type ID.
+    def test_returns_issue_type_id_on_match(self):
+        """Setup: issue type exists by name.
+        Expectations: returns the issue type ID without falling back.
         """
         resolver, _ = make_resolver(fetchone_return=(4,))
 
         assert resolver.resolve_issue_type(1, "Bug") == 4
 
-    def test_not_found_raises(self):
-        """Setup: no matching issue type.
-        Expectations: ResolveError naming the type.
+    def test_falls_back_to_default_on_no_match(self):
+        """Setup: no issue type by name; project has a default.
+        Expectations: returns the default issue type ID.
         """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="Bug"):
-            resolver.resolve_issue_type(1, "Bug")
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.side_effect = [None, (6,)]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        resolver = Resolver(mock_conn)
+
+        assert resolver.resolve_issue_type(1, "Unknown") == 6
+
+    def test_no_match_and_no_default_raises(self):
+        """Setup: no issue type by name and project has no default.
+        Expectations: ResolveError raised.
+        """
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.side_effect = [None, None]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        resolver = Resolver(mock_conn)
+        with pytest.raises(ResolveError, match="default issue type"):
+            resolver.resolve_issue_type(1, "Unknown")
+
+    def test_fallback_logs_warning(self, caplog):
+        """Setup: issue type name not found.
+        Expectations: warning logged naming the type and project.
+        """
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.side_effect = [None, (6,)]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        resolver = Resolver(mock_conn)
+
+        with caplog.at_level(logging.WARNING, logger="taigun.resolver"):
+            resolver.resolve_issue_type(1, "Unknown")
+
+        assert caplog.messages == ["Issue type 'Unknown' not found for project 1, falling back to default"]
+
+    def test_none_name_returns_default_without_warning(self, caplog):
+        """Setup: name is None.
+        Expectations: default returned; no warning logged.
+        """
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = (6,)
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        resolver = Resolver(mock_conn)
+
+        with caplog.at_level(logging.WARNING, logger="taigun.resolver"):
+            result = resolver.resolve_issue_type(1, None)
+
+        assert result == 6
+        assert caplog.text == ""
 
 
 class TestResolveSeverity:
-    def test_returns_severity_id(self):
-        """Setup: severity exists.
-        Expectations: returns the severity ID.
+    def test_returns_severity_id_on_match(self):
+        """Setup: severity exists by name.
+        Expectations: returns the severity ID without falling back.
         """
         resolver, _ = make_resolver(fetchone_return=(6,))
 
         assert resolver.resolve_severity(1, "High") == 6
 
-    def test_not_found_raises(self):
-        """Setup: no matching severity.
-        Expectations: ResolveError naming the severity.
+    def test_falls_back_to_default_on_no_match(self):
+        """Setup: no severity by name; project has a default.
+        Expectations: returns the default severity ID.
         """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="High"):
-            resolver.resolve_severity(1, "High")
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.side_effect = [None, (3,)]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        resolver = Resolver(mock_conn)
+
+        assert resolver.resolve_severity(1, "Unknown") == 3
+
+    def test_no_match_and_no_default_raises(self):
+        """Setup: no severity by name and project has no default.
+        Expectations: ResolveError raised.
+        """
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.side_effect = [None, None]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        resolver = Resolver(mock_conn)
+        with pytest.raises(ResolveError, match="default severity"):
+            resolver.resolve_severity(1, "Unknown")
+
+    def test_fallback_logs_warning(self, caplog):
+        """Setup: severity name not found.
+        Expectations: warning logged naming the severity and project.
+        """
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.side_effect = [None, (3,)]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        resolver = Resolver(mock_conn)
+
+        with caplog.at_level(logging.WARNING, logger="taigun.resolver"):
+            resolver.resolve_severity(1, "Unknown")
+
+        assert caplog.messages == ["Severity 'Unknown' not found for project 1, falling back to default"]
+
+    def test_none_name_returns_default_without_warning(self, caplog):
+        """Setup: name is None.
+        Expectations: default returned; no warning logged.
+        """
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = (3,)
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        resolver = Resolver(mock_conn)
+
+        with caplog.at_level(logging.WARNING, logger="taigun.resolver"):
+            result = resolver.resolve_severity(1, None)
+
+        assert result == 3
+        assert caplog.text == ""
 
 
 class TestResolveEpic:
