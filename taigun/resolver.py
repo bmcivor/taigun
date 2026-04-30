@@ -172,55 +172,97 @@ class Resolver:
 
         return row[0]
 
-    def resolve_issue_type(self, project_id: int, name: str) -> int:
-        """Look up an issue type ID by name.
+    def resolve_issue_type(self, project_id: int, name: Optional[str]) -> int:
+        """Look up an issue type ID by name, falling back to the project default.
+
+        Matching is case-insensitive. If name is None or no match is found,
+        returns the project's default issue type. A warning is logged only when
+        a name was given but not found.
 
         Args:
             project_id: Project ID.
-            name: Issue type name (case-insensitive).
+            name: Issue type name, or None to use the project default directly.
 
         Returns:
             Issue type ID.
 
         Raises:
-            ResolveError: If the issue type is not found.
+            ResolveError: If no match and no default issue type exists.
         """
+        if name is not None:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id FROM projects_issuetype"
+                    " WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
+                    (project_id, name),
+                )
+                row = cur.fetchone()
+
+            if row is not None:
+                return row[0]
+
+            logger.warning(
+                "Issue type '%s' not found for project %d, falling back to default",
+                name,
+                project_id,
+            )
+
         with self._conn.cursor() as cur:
             cur.execute(
-                "SELECT id FROM projects_issuetype"
-                " WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
-                (project_id, name),
+                "SELECT default_issue_type_id FROM projects_project WHERE id = %s",
+                (project_id,),
             )
             row = cur.fetchone()
 
-        if row is None:
-            raise ResolveError(f"Issue type '{name}' not found for project {project_id}")
+        if row is None or row[0] is None:
+            raise ResolveError(f"No default issue type found for project {project_id}")
 
         return row[0]
 
-    def resolve_severity(self, project_id: int, name: str) -> int:
-        """Look up a severity ID by name.
+    def resolve_severity(self, project_id: int, name: Optional[str]) -> int:
+        """Look up a severity ID by name, falling back to the project default.
+
+        Matching is case-insensitive. If name is None or no match is found,
+        returns the project's default severity. A warning is logged only when
+        a name was given but not found.
 
         Args:
             project_id: Project ID.
-            name: Severity name (case-insensitive).
+            name: Severity name, or None to use the project default directly.
 
         Returns:
             Severity ID.
 
         Raises:
-            ResolveError: If the severity is not found.
+            ResolveError: If no match and no default severity exists.
         """
+        if name is not None:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id FROM projects_severity"
+                    " WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
+                    (project_id, name),
+                )
+                row = cur.fetchone()
+
+            if row is not None:
+                return row[0]
+
+            logger.warning(
+                "Severity '%s' not found for project %d, falling back to default",
+                name,
+                project_id,
+            )
+
         with self._conn.cursor() as cur:
             cur.execute(
-                "SELECT id FROM projects_severity"
-                " WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
-                (project_id, name),
+                "SELECT default_severity_id FROM projects_project WHERE id = %s",
+                (project_id,),
             )
             row = cur.fetchone()
 
-        if row is None:
-            raise ResolveError(f"Severity '{name}' not found for project {project_id}")
+        if row is None or row[0] is None:
+            raise ResolveError(f"No default severity found for project {project_id}")
 
         return row[0]
 
