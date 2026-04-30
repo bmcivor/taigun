@@ -347,6 +347,24 @@ class TestResolveSeverity:
         assert caplog.text == ""
 
 
+class TestResolveStory:
+    def test_returns_story_id(self):
+        """Setup: user story exists with that ref.
+        Expectations: returns the story ID.
+        """
+        resolver, _ = make_resolver(fetchone_return=(7,))
+
+        assert resolver.resolve_story(1, 10) == 7
+
+    def test_not_found_raises(self):
+        """Setup: no user story with that ref.
+        Expectations: ResolveError naming the ref.
+        """
+        resolver, _ = make_resolver(fetchone_return=None)
+        with pytest.raises(ResolveError, match="#10"):
+            resolver.resolve_story(1, 10)
+
+
 class TestResolveEpic:
     def test_returns_epic_id(self):
         """Setup: epic exists with that ref.

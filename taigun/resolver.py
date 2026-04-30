@@ -266,6 +266,31 @@ class Resolver:
 
         return row[0]
 
+    def resolve_story(self, project_id: int, ref: int) -> int:
+        """Look up a user story ID by project-scoped ref number.
+
+        Args:
+            project_id: Project ID.
+            ref: User story ref number within the project.
+
+        Returns:
+            User story ID.
+
+        Raises:
+            ResolveError: If no user story with that ref exists.
+        """
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT id FROM userstories_userstory WHERE project_id = %s AND ref = %s",
+                (project_id, ref),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise ResolveError(f"Story ref #{ref} not found for project {project_id}")
+
+        return row[0]
+
     def resolve_epic(self, project_id: int, ref: int) -> int:
         """Look up an epic ID by project-scoped ref number.
 
