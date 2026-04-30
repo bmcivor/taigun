@@ -1,25 +1,24 @@
-import datetime
 from typing import Optional
 
-from taigun.db.ref import RefAllocator
+from taigun.db.base import BaseWriter
 from taigun.models import Issue
 
 
-class IssueWriter:
+class IssueWriter(BaseWriter):
     """Inserts an Issue and all related rows into the Taiga database.
 
     Must be used within a transaction managed by ConnectionManager.
     """
 
-    def __init__(self, conn, resolver) -> None:
-        self._conn = conn
-        self._resolver = resolver
+    _ticket_type = "issue"
+    _content_type = ("issues", "issue")
+    _table = "issues_issue"
 
     def write(self, issue: Issue, acting_user: str) -> int:
         """Insert an issue and return the allocated ref number.
 
         Resolves all FK references, inserts into issues_issue,
-        allocates a project-scoped ref, and writes any optional related rows.
+        and allocates a project-scoped ref.
 
         Args:
             issue: Populated Issue model.
@@ -28,16 +27,7 @@ class IssueWriter:
         Returns:
             Allocated ref number.
         """
-        now = datetime.datetime.now(datetime.timezone.utc)
-
-        project_id = self._resolver.resolve_project(issue.project)
-        owner_id = self._resolver.resolve_user(acting_user)
-
-        if issue.status is not None:
-            status_id = self._resolver.resolve_status(project_id, issue.status, "issue")
-        else:
-            status_id = self._resolver.resolve_default_status(project_id, "issue")
-
+        project_id, owner_id, status_id, now = self._resolve_common(issue, acting_user)
         priority_id = self._resolver.resolve_priority(project_id, issue.priority)
         type_id = self._resolver.resolve_issue_type(project_id, issue.issue_type)
         severity_id = self._resolver.resolve_severity(project_id, issue.severity)
@@ -49,8 +39,6 @@ class IssueWriter:
         milestone_id: Optional[int] = None
         if issue.milestone is not None:
             milestone_id = self._resolver.resolve_milestone(project_id, issue.milestone)
-
-        content_type_id = self._resolver.resolve_content_type("issues", "issue")
 
         with self._conn.cursor() as cur:
             cur.execute(
@@ -77,12 +65,4 @@ class IssueWriter:
             )
             object_id = cur.fetchone()[0]
 
-        ref = RefAllocator(self._conn).allocate(project_id, object_id, content_type_id)
-
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "UPDATE issues_issue SET ref = %s WHERE id = %s",
-                (ref, object_id),
-            )
-
-        return ref
+        return self._allocate_and_set_ref(project_id, object_id)

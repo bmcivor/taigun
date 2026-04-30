@@ -1,19 +1,18 @@
-import datetime
 from typing import Optional
 
-from taigun.db.ref import RefAllocator
+from taigun.db.base import BaseWriter
 from taigun.models import Story
 
 
-class StoryWriter:
+class StoryWriter(BaseWriter):
     """Inserts a Story and all related rows into the Taiga database.
 
     Must be used within a transaction managed by ConnectionManager.
     """
 
-    def __init__(self, conn, resolver) -> None:
-        self._conn = conn
-        self._resolver = resolver
+    _ticket_type = "story"
+    _content_type = ("userstories", "userstory")
+    _table = "userstories_userstory"
 
     def write(self, story: Story, acting_user: str) -> int:
         """Insert a story and return the allocated ref number.
@@ -28,17 +27,8 @@ class StoryWriter:
         Returns:
             Allocated ref number.
         """
-        now = datetime.datetime.now(datetime.timezone.utc)
+        project_id, owner_id, status_id, now = self._resolve_common(story, acting_user)
         order = int(now.timestamp())
-
-        project_id = self._resolver.resolve_project(story.project)
-        owner_id = self._resolver.resolve_user(acting_user)
-
-        if story.status is not None:
-            status_id = self._resolver.resolve_status(project_id, story.status, "story")
-        else:
-            status_id = self._resolver.resolve_default_status(project_id, "story")
-
         priority_id = self._resolver.resolve_priority(project_id, story.priority)
 
         assigned_to_id: Optional[int] = None
@@ -48,8 +38,6 @@ class StoryWriter:
         milestone_id: Optional[int] = None
         if story.milestone is not None:
             milestone_id = self._resolver.resolve_milestone(project_id, story.milestone)
-
-        content_type_id = self._resolver.resolve_content_type("userstories", "userstory")
 
         with self._conn.cursor() as cur:
             cur.execute(
@@ -77,13 +65,7 @@ class StoryWriter:
             )
             object_id = cur.fetchone()[0]
 
-        ref = RefAllocator(self._conn).allocate(project_id, object_id, content_type_id)
-
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "UPDATE userstories_userstory SET ref = %s WHERE id = %s",
-                (ref, object_id),
-            )
+        ref = self._allocate_and_set_ref(project_id, object_id)
 
         if story.assignee is not None:
             with self._conn.cursor() as cur:

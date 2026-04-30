@@ -1,19 +1,18 @@
-import datetime
 from typing import Optional
 
-from taigun.db.ref import RefAllocator
+from taigun.db.base import BaseWriter
 from taigun.models import Task
 
 
-class TaskWriter:
+class TaskWriter(BaseWriter):
     """Inserts a Task and all related rows into the Taiga database.
 
     Must be used within a transaction managed by ConnectionManager.
     """
 
-    def __init__(self, conn, resolver) -> None:
-        self._conn = conn
-        self._resolver = resolver
+    _ticket_type = "task"
+    _content_type = ("tasks", "task")
+    _table = "tasks_task"
 
     def write(self, task: Task, acting_user: str) -> int:
         """Insert a task and return the allocated ref number.
@@ -28,16 +27,8 @@ class TaskWriter:
         Returns:
             Allocated ref number.
         """
-        now = datetime.datetime.now(datetime.timezone.utc)
+        project_id, owner_id, status_id, now = self._resolve_common(task, acting_user)
         order = int(now.timestamp())
-
-        project_id = self._resolver.resolve_project(task.project)
-        owner_id = self._resolver.resolve_user(acting_user)
-
-        if task.status is not None:
-            status_id = self._resolver.resolve_status(project_id, task.status, "task")
-        else:
-            status_id = self._resolver.resolve_default_status(project_id, "task")
 
         user_story_id: Optional[int] = None
         if task.parent is not None:
@@ -50,8 +41,6 @@ class TaskWriter:
         milestone_id: Optional[int] = None
         if task.milestone is not None:
             milestone_id = self._resolver.resolve_milestone(project_id, task.milestone)
-
-        content_type_id = self._resolver.resolve_content_type("tasks", "task")
 
         with self._conn.cursor() as cur:
             cur.execute(
@@ -78,12 +67,4 @@ class TaskWriter:
             )
             object_id = cur.fetchone()[0]
 
-        ref = RefAllocator(self._conn).allocate(project_id, object_id, content_type_id)
-
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "UPDATE tasks_task SET ref = %s WHERE id = %s",
-                (ref, object_id),
-            )
-
-        return ref
+        return self._allocate_and_set_ref(project_id, object_id)
