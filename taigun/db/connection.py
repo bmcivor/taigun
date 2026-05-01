@@ -16,8 +16,11 @@ class ConnectionManager:
         self._config = config
 
     @contextmanager
-    def connect(self) -> Generator[psycopg2.extensions.connection, None, None]:
+    def connect(self, dry_run: bool = False) -> Generator[psycopg2.extensions.connection, None, None]:
         """Open a database connection as a context manager.
+
+        Args:
+            dry_run: If True, rollback instead of commit on clean exit.
 
         Yields:
             An open psycopg2 connection.
@@ -38,7 +41,10 @@ class ConnectionManager:
 
         try:
             yield conn
-            conn.commit()
+            if dry_run:
+                conn.rollback()
+            else:
+                conn.commit()
         except Exception:
             conn.rollback()
             raise
