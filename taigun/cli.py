@@ -7,8 +7,10 @@ from taigun.config import ConfigManager, Profile
 from taigun.db.connection import ConnectionManager
 from taigun.db.epic import EpicWriter
 from taigun.db.issue import IssueWriter
+from taigun.db.lister import Lister
 from taigun.db.story import StoryWriter
 from taigun.db.task import TaskWriter
+from taigun.exceptions import ResolveError
 from taigun.parsers.file import FileParser
 from taigun.resolver import Resolver
 
@@ -20,6 +22,14 @@ _WRITERS = {
 }
 
 app = typer.Typer(help="Write Taiga tickets directly to the database.")
+
+projects_app = typer.Typer(help="List and inspect projects.")
+epics_app = typer.Typer(help="List and inspect epics.")
+statuses_app = typer.Typer(help="List and inspect statuses.")
+
+app.add_typer(projects_app, name="projects")
+app.add_typer(epics_app, name="epics")
+app.add_typer(statuses_app, name="statuses")
 
 
 @app.callback(invoke_without_command=True)
@@ -106,6 +116,67 @@ def push(
 
     if any_failed:
         raise typer.Exit(code=1)
+
+
+@projects_app.command("list")
+def projects_list(
+    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+) -> None:
+    """List all projects on the configured instance."""
+    config = ConfigManager().load(profile)
+    with ConnectionManager(config).connect() as conn:
+        lister = Lister(conn)
+        projects = lister.list_projects()
+
+    for name, slug in projects:
+        typer.echo(f"{name} ({slug})")
+
+
+@epics_app.command("list")
+def epics_list(
+    project_slug: str = typer.Argument(..., help="Project slug."),
+    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+) -> None:
+    """List all epics in a project."""
+    config = ConfigManager().load(profile)
+    with ConnectionManager(config).connect() as conn:
+        resolver = Resolver(conn)
+        lister = Lister(conn)
+        try:
+            project_id = resolver.resolve_project(project_slug)
+        except ResolveError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(code=1)
+
+        epics = lister.list_epics(project_id)
+
+    for ref, subject in epics:
+        typer.echo(f"#{ref}  {subject}")
+
+
+@statuses_app.command("list")
+def statuses_list(
+    project_slug: str = typer.Argument(..., help="Project slug."),
+    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+) -> None:
+    """List statuses grouped by ticket type for a project."""
+    config = ConfigManager().load(profile)
+    with ConnectionManager(config).connect() as conn:
+        resolver = Resolver(conn)
+        lister = Lister(conn)
+        try:
+            project_id = resolver.resolve_project(project_slug)
+        except ResolveError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(code=1)
+
+        statuses = lister.list_statuses(project_id)
+
+    for ticket_type, status_list in statuses.items():
+        typer.echo(f"{ticket_type}:")
+        for name, is_closed in status_list:
+            suffix = "  [closed]" if is_closed else ""
+            typer.echo(f"  {name}{suffix}")
 
 
 def _profile_exists(config: ConfigManager, profile: str) -> bool:
