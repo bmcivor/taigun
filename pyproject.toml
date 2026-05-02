@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools==82.0.1"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "taigun"
@@ -9,10 +9,10 @@ description = "Write Taiga tickets directly to the database from the command lin
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "typer>=0.12",
-    "psycopg2-binary>=2.9",
-    "python-frontmatter>=1.1",
-    "tomli-w>=1.0",
+    "typer==0.25.1",
+    "psycopg2-binary==2.9.12",
+    "python-frontmatter==1.0.0",
+    "tomli-w==1.2.0",
 ]
 
 [project.scripts]
@@ -20,11 +20,13 @@ taigun = "taigun.cli:app"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0",
+    "pytest==9.0.2",
+    "python-semantic-release==9.21.1",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["taigun"]
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+tag_format = "v{version}"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
