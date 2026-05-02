@@ -1,4 +1,4 @@
-## 15. configure command
+## ~~15. configure command~~ (Done)
 
 **Epic:** E5 — CLI
 
@@ -12,7 +12,7 @@
   username, password, acting_user, profile name (default `default`)
 - Tests the connection before saving — prints success or failure
 - On success, writes to `~/.config/taigun/config.toml`
-- On failure, asks if the user wants to save anyway
+- On failure, exits with code 1 and does not save
 - Re-running with an existing profile name prompts before overwriting
 - `taigun configure --profile <name>` skips the profile name prompt
 

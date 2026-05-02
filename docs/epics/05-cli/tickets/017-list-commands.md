@@ -1,4 +1,4 @@
-## 17. list commands
+## ~~17. list commands~~ (Done)
 
 **Epic:** E5 — CLI
 

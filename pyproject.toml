@@ -6,14 +6,36 @@ build-backend = "setuptools.build_meta"
 name = "taigun"
 version = "0.0.0"
 description = "Write Taiga tickets directly to the database from the command line"
-license = { text = "MIT" }
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Blake McIvor" },
+]
 requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+]
+keywords = ["taiga", "taiga-6", "tickets", "cli", "project-management"]
 dependencies = [
     "typer==0.25.1",
     "psycopg2-binary==2.9.12",
     "python-frontmatter==1.0.0",
     "tomli-w==1.2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/bmcivor/taigun"
+Repository = "https://github.com/bmcivor/taigun"
+Issues = "https://github.com/bmcivor/taigun/issues"
 
 [project.scripts]
 taigun = "taigun.cli:app"

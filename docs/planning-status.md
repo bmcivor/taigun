@@ -1,6 +1,6 @@
 # Planning status
 
-Last updated: 2026-05-01
+Last updated: 2026-05-03
 
 ## What's done
 
@@ -29,10 +29,28 @@ Last updated: 2026-05-01
 - 014 complete: `db/epic.py` — EpicWriter; random color generation
 - BaseWriter ABC extracted to `db/base.py`; shared logic (_resolve_common, _resolve_status,
   _allocate_and_set_ref) consolidated; status tests moved to test_base.py; E4 complete
+- 015 complete: `taigun configure` — interactive profile setup with connection test
+- 016 complete: `taigun push` — multi-file push, dry-run, per-file failure handling,
+  exit codes; `ConnectionManager.connect(dry_run=)` added
+- Test suite refactored: `tests/db/conftest.py` with shared fixtures; class-level fixtures
+  throughout; real ConfigManager and FileParser used in CLI tests
+- 017 complete: `taigun projects list`, `taigun epics list`, `taigun statuses list`;
+  `db/lister.py` — Lister class; E5 complete
+- 018 complete: PyPI-ready `pyproject.toml` (PEP 639 license, classifiers, urls, authors);
+  MIT LICENSE file; expanded README; `uv build` produces clean wheel + sdist
+- Build backend swapped from hatchling to `setuptools==82.0.1`
+- All runtime and dev dependencies pinned exactly with `==` in `pyproject.toml`
+- `python-semantic-release==9.21.1` wired up for version bumping (dev dep + `[tool.semantic_release]` config)
+- Release container scaffolding: `release` Dockerfile stage with git, `release` service in
+  docker-compose, `scripts/release.sh` wrapper that passes host git identity into the container
+- `UV_PROJECT_ENVIRONMENT=/opt/venv` in Dockerfile base stage so the image's venv lives
+  outside the volume mount (fixes root-owned `.venv` on host after docker runs)
 
 ## What's next
 
-- 015: configure command (E5 CLI)
+- Use it in anger: populate vertex-play tickets to the lab Taiga instance (covers 019)
+- 0.1.0 cut once the run-through is clean
+- 1.0.0 once it's been demonstrably stable
 
 ## Key decisions
 
@@ -42,3 +60,6 @@ Last updated: 2026-05-01
 - Taiga images pinned to `6.9.0` via `docker-compose.override.yml` deployed by the taiga role
 - `tailscale_hostname` added as a shared variable in vertex-studio `vars.yaml`; `jenkins_url`
   refactored to use it
+- Build backend: `setuptools` (chosen for ubiquity over hatchling/flit-core)
+- Version management: `python-semantic-release` (parses conventional commits to determine
+  bump level; runs in a Docker container via `scripts/release.sh`)

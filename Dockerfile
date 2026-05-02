@@ -6,7 +6,7 @@ WORKDIR /app
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md LICENSE ./
 
 FROM base AS test
 
