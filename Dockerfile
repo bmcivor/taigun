@@ -12,3 +12,9 @@ COPY taigun/ ./taigun/
 COPY tests/ ./tests/
 
 RUN uv sync --frozen --group dev
+
+FROM test AS release
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*

@@ -6,3 +6,10 @@ services:
     command: uv run pytest tests/ -v
     volumes:
       - .:/app
+
+  release:
+    build:
+      context: .
+      target: release
+    volumes:
+      - .:/app
