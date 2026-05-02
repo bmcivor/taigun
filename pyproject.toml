@@ -50,5 +50,8 @@ dev = [
 version_toml = ["pyproject.toml:project.version"]
 tag_format = "v{version}"
 
+[tool.semantic_release.branches.main]
+match = "tag-release"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

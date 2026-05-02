@@ -163,13 +163,20 @@ Tests run inside Docker:
 docker compose run --rm test
 ```
 
-Releases are cut with [python-semantic-release](https://python-semantic-release.readthedocs.io/)
-inside a container that mounts your local git config:
+Releases are cut from the `tag-release` branch using
+[python-semantic-release](https://python-semantic-release.readthedocs.io/) inside a
+container that passes your local git identity through:
 
 ```
-./scripts/release.sh version --noop   # dry run
-./scripts/release.sh version          # bump, commit, tag
+git checkout tag-release
+./scripts/release.sh --noop version --minor   # dry run
+./scripts/release.sh version --minor          # bump, commit, tag
+git push origin tag-release --tags
 ```
+
+The `--minor` (or `--major` / `--patch`) flag forces a bump level. Drop it to let
+semantic-release determine the bump from conventional commit messages since the last
+tag. `--noop` is a global flag and must come before the `version` subcommand.
 
 ## License
 

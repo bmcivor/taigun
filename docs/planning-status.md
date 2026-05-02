@@ -40,7 +40,7 @@ Last updated: 2026-05-03
   MIT LICENSE file; expanded README; `uv build` produces clean wheel + sdist
 - Build backend swapped from hatchling to `setuptools==82.0.1`
 - All runtime and dev dependencies pinned exactly with `==` in `pyproject.toml`
-- `python-semantic-release==9.21.1` wired up for version bumping (dev dep + `[tool.semantic_release]` config)
+- `python-semantic-release==9.21.1` wired up for version bumping (dev dep + `[tool.semantic_release]` config); release branch configured as `tag-release`
 - Release container scaffolding: `release` Dockerfile stage with git, `release` service in
   docker-compose, `scripts/release.sh` wrapper that passes host git identity into the container
 - `UV_PROJECT_ENVIRONMENT=/opt/venv` in Dockerfile base stage so the image's venv lives
