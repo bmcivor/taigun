@@ -5,6 +5,7 @@ COPY --from=docker.io/astral/uv:0.11.8 /uv /usr/local/bin/uv
 WORKDIR /app
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 COPY pyproject.toml uv.lock README.md LICENSE ./
 
