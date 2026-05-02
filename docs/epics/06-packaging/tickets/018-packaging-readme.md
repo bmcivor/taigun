@@ -1,4 +1,4 @@
-## 18. Packaging and README
+## ~~18. Packaging and README~~ (Done)
 
 **Epic:** E6 — Packaging & release
 
@@ -12,7 +12,7 @@
   license, homepage URL)
 - `README.md` covers: what taigun is, install (`pip install taigun`), configure,
   push, link to `docs/ticket-format.md`
-- `python -m build` produces a clean wheel and sdist with no warnings
+- `uv build` produces a clean wheel and sdist with no warnings
 - Licence confirmed as MIT (LICENSE file present)
 
 ### Dependencies

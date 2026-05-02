@@ -1,4 +1,4 @@
-## 16. push command
+## ~~16. push command~~ (Done)
 
 **Epic:** E5 — CLI
 
