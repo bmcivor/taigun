@@ -8,6 +8,7 @@ from taigun.db.connection import ConnectionManager
 from taigun.db.epic import EpicWriter
 from taigun.db.issue import IssueWriter
 from taigun.db.lister import Lister
+from taigun.db.project import ProjectCreator, ProjectExistsError
 from taigun.db.story import StoryWriter
 from taigun.db.task import TaskWriter
 from taigun.exceptions import ResolveError
@@ -118,12 +119,37 @@ def push(
         raise typer.Exit(code=1)
 
 
+@projects_app.command("create")
+def projects_create(
+    name: str = typer.Argument(..., help="Project name."),
+    slug: str = typer.Argument(..., help="Project slug."),
+    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+) -> None:
+    """Create a new Taiga project."""
+    config = ConfigManager().load(profile)
+
+    with ConnectionManager(config).connect() as conn:
+        resolver = Resolver(conn)
+        creator = ProjectCreator(conn, resolver)
+        try:
+            project_id, project_slug = creator.create(name, slug, config.acting_user)
+        except ProjectExistsError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(code=1)
+        except ResolveError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(code=1)
+
+    typer.echo(f"Created project #{project_id}: {project_slug}")
+
+
 @projects_app.command("list")
 def projects_list(
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
 ) -> None:
     """List all projects on the configured instance."""
     config = ConfigManager().load(profile)
+
     with ConnectionManager(config).connect() as conn:
         lister = Lister(conn)
         projects = lister.list_projects()
