@@ -1,9 +1,53 @@
 services:
+  test-db:
+    image: postgres:12.3
+    environment:
+      POSTGRES_DB: taiga
+      POSTGRES_USER: taiga
+      POSTGRES_PASSWORD: taiga
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "taiga", "-d", "taiga"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  test-db-init:
+    image: taigaio/taiga-back:6.9.0
+    depends_on:
+      test-db:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: taiga
+      POSTGRES_USER: taiga
+      POSTGRES_PASSWORD: taiga
+      POSTGRES_HOST: test-db
+      TAIGA_SECRET_KEY: test-only-secret
+      TAIGA_SITES_SCHEME: http
+      TAIGA_SITES_DOMAIN: localhost
+      TAIGA_SUBPATH: ""
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_PASSWORD: admin
+      DJANGO_SUPERUSER_EMAIL: admin@example.com
+      CELERY_ENABLED: "False"
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        python manage.py migrate &&
+        python manage.py loaddata initial_project_templates &&
+        python manage.py createsuperuser --noinput
+
   test:
     build:
       context: .
       target: test
     command: uv run pytest tests/ -v
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-db-init:
+        condition: service_completed_successfully
+    environment:
+      TEST_DB_URL: postgresql://taiga:taiga@test-db:5432/taiga
     volumes:
       - .:/app
 
