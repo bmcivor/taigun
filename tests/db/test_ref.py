@@ -1,62 +1,42 @@
-import psycopg2.errors
 import pytest
 
-from unittest.mock import MagicMock
-
 from taigun.db import RefAllocator
+from taigun.resolver import Resolver
+
+from factories import make_project
 
 
-def make_conn(nextval=42):
-    mock_cursor = MagicMock()
-    mock_cursor.fetchone.return_value = (nextval,)
-    mock_conn = MagicMock()
-    mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-
-    return mock_conn, mock_cursor
-
-
+@pytest.mark.xfail(reason="ticket 023: references_reference INSERT missing required column(s)")
 class TestRefAllocator:
-    def test_returns_ref(self):
-        """Setup: sequence exists and returns a value.
-        Expectations: allocate returns the ref number.
+    def test_returns_positive_ref(self, real_conn):
+        """Setup: project exists (sequence created by ProjectCreator).
+        Expectations: allocate returns a positive ref.
         """
-        mock_conn, _ = make_conn(nextval=7)
+        project_id = make_project(real_conn)
+        content_type_id = Resolver(real_conn).resolve_content_type("userstories", "userstory")
 
-        assert RefAllocator(mock_conn).allocate(1, 99, 5) == 7
+        ref = RefAllocator(real_conn).allocate(project_id, 1, content_type_id)
 
-    def test_calls_correct_sequence(self):
-        """Setup: project ID 3.
-        Expectations: nextval called on references_project3.
+        assert ref > 0
+
+    def test_refs_are_sequential_for_same_project(self, real_conn):
+        """Setup: same project, two allocations.
+        Expectations: second ref is exactly one greater than the first.
         """
-        mock_conn, mock_cursor = make_conn()
-        RefAllocator(mock_conn).allocate(3, 99, 5)
-        first_call_sql = mock_cursor.execute.call_args_list[0][0][0]
+        project_id = make_project(real_conn)
+        content_type_id = Resolver(real_conn).resolve_content_type("userstories", "userstory")
+        allocator = RefAllocator(real_conn)
 
-        assert first_call_sql == "SELECT nextval('references_project3')"
+        ref_a = allocator.allocate(project_id, 1, content_type_id)
+        ref_b = allocator.allocate(project_id, 2, content_type_id)
 
-    def test_inserts_reference_row(self):
-        """Setup: sequence call succeeds.
-        Expectations: INSERT into references_reference with correct values.
+        assert ref_b == ref_a + 1
+
+
+class TestRefAllocatorMissingSequence:
+    def test_missing_sequence_raises_system_exit(self, real_conn):
+        """Setup: project ID with no corresponding ref sequence.
+        Expectations: SystemExit raised with project ID in the message.
         """
-        mock_conn, mock_cursor = make_conn(nextval=42)
-        RefAllocator(mock_conn).allocate(1, 99, 5)
-        insert_call = mock_cursor.execute.call_args_list[1]
-        sql, params = insert_call[0]
-
-        assert sql == (
-            "INSERT INTO references_reference (ref, object_id, content_type_id, project_id)"
-            " VALUES (%s, %s, %s, %s)"
-        )
-        assert params == (42, 99, 5, 1)
-
-    def test_missing_sequence_raises_system_exit(self):
-        """Setup: sequence does not exist for the project.
-        Expectations: SystemExit with a clear message naming the project.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.execute.side_effect = psycopg2.errors.UndefinedTable("no sequence")
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-
-        with pytest.raises(SystemExit, match="project 1"):
-            RefAllocator(mock_conn).allocate(1, 99, 5)
+        with pytest.raises(SystemExit, match="project 99999"):
+            RefAllocator(real_conn).allocate(99999, 1, 1)

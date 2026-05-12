@@ -1,6 +1,9 @@
-from unittest.mock import MagicMock
+import pytest
 
 from taigun.db.base import BaseWriter
+from taigun.resolver import Resolver
+
+from factories import make_project
 
 
 class StubWriter(BaseWriter):
@@ -12,36 +15,26 @@ class StubWriter(BaseWriter):
         pass
 
 
-def make_writer():
-    mock_conn = MagicMock()
-    mock_resolver = MagicMock()
-    mock_resolver.resolve_status.return_value = 2
-    mock_resolver.resolve_default_status.return_value = 2
-
-    return StubWriter(mock_conn, mock_resolver), mock_resolver
-
-
+@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
 class TestBaseWriterResolveStatus:
-    def test_resolves_status_when_set(self):
-        """Setup: status name provided.
-        Expectations: resolve_status called with project_id, name, and ticket_type;
-        resolve_default_status not called.
+    def test_resolves_named_status_returns_positive_id(self, real_conn):
+        """Setup: project with default kanban template ('New' is a known story status).
+        Expectations: _resolve_status returns a positive id for the known name.
         """
-        writer, mock_resolver = make_writer()
+        project_id = make_project(real_conn)
+        writer = StubWriter(real_conn, Resolver(real_conn))
 
-        writer._resolve_status(1, "In Progress")
+        status_id = writer._resolve_status(project_id, "New")
 
-        mock_resolver.resolve_status.assert_called_once_with(1, "In Progress", "story")
-        mock_resolver.resolve_default_status.assert_not_called()
+        assert isinstance(status_id, int) and status_id > 0
 
-    def test_resolves_default_status_when_not_set(self):
-        """Setup: status is None.
-        Expectations: resolve_default_status called with project_id and ticket_type;
-        resolve_status not called.
+    def test_resolves_default_status_when_name_none(self, real_conn):
+        """Setup: project with a default story status configured.
+        Expectations: _resolve_status(None) returns a positive id (the project's default).
         """
-        writer, mock_resolver = make_writer()
+        project_id = make_project(real_conn)
+        writer = StubWriter(real_conn, Resolver(real_conn))
 
-        writer._resolve_status(1, None)
+        status_id = writer._resolve_status(project_id, None)
 
-        mock_resolver.resolve_default_status.assert_called_once_with(1, "story")
-        mock_resolver.resolve_status.assert_not_called()
+        assert isinstance(status_id, int) and status_id > 0

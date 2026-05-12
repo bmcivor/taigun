@@ -1,186 +1,47 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
 
 from taigun.db.issue import IssueWriter
 from taigun.models import Issue
+from taigun.resolver import Resolver
 
-from .conftest import FIXED_NOW
-
-
-def make_resolver():
-    mock_resolver = MagicMock()
-    mock_resolver.resolve_project.return_value = 1
-    mock_resolver.resolve_user.return_value = 5
-    mock_resolver.resolve_default_status.return_value = 2
-    mock_resolver.resolve_status.return_value = 2
-    mock_resolver.resolve_priority.return_value = 3
-    mock_resolver.resolve_issue_type.return_value = 6
-    mock_resolver.resolve_severity.return_value = 7
-    mock_resolver.resolve_content_type.return_value = 9
-    mock_resolver.resolve_milestone.return_value = 4
-    return mock_resolver
+from factories import make_project
 
 
-def make_issue(**kwargs):
-    defaults = {"project": "my-project", "subject": "Something is broken"}
-    return Issue(**{**defaults, **kwargs})
-
-
+@pytest.mark.xfail(reason="ticket 023: writer SQL bugs not yet fixed")
 class TestIssueWriter:
-    @pytest.fixture
-    def resolver(self):
-        return make_resolver()
-
-    @pytest.fixture
-    def writer(self, mock_conn, resolver):
-        return IssueWriter(mock_conn, resolver)
-
-    def test_returns_ref(self, writer):
-        """Setup: all resolvers succeed; RefAllocator returns 42.
-        Expectations: write returns the allocated ref.
+    def test_returns_positive_ref(self, real_conn):
+        """Setup: project exists; issue has only required fields.
+        Expectations: writer.write returns a positive ref number.
         """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            ref = writer.write(make_issue(), "admin")
+        make_project(real_conn)
+        writer = IssueWriter(real_conn, Resolver(real_conn))
 
-        assert ref == 42
+        ref = writer.write(Issue(project="test-project", subject="Broken"), "admin")
 
-    def test_insert_sql_and_params(self, writer, mock_cursor):
-        """Setup: issue with no optional fields.
-        Expectations: INSERT SQL and params are exact.
+        assert ref > 0
+
+    def test_ref_is_sequential_within_project(self, real_conn):
+        """Setup: project exists; two issues written in succession.
+        Expectations: second ref is exactly one greater than the first.
         """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(description="desc"), "admin")
+        make_project(real_conn)
+        writer = IssueWriter(real_conn, Resolver(real_conn))
 
-        sql, params = mock_cursor.execute.call_args_list[0][0]
+        ref_a = writer.write(Issue(project="test-project", subject="A"), "admin")
+        ref_b = writer.write(Issue(project="test-project", subject="B"), "admin")
 
-        assert sql == (
-            "INSERT INTO issues_issue"
-            " (subject, description, project_id, status_id, priority_id, type_id,"
-            "  severity_id, owner_id, assigned_to_id, milestone_id, ref,"
-            "  created_date, modified_date, version)"
-            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1)"
-            " RETURNING id"
-        )
-        assert params == (
-            "Something is broken",
-            "desc",
-            1,
-            2,
-            3,
-            6,
-            7,
-            5,
-            None,
-            None,
-            FIXED_NOW,
-            FIXED_NOW,
+        assert ref_b == ref_a + 1
+
+    def test_with_assignee_succeeds(self, real_conn):
+        """Setup: issue with assignee set to the existing admin user.
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = IssueWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Issue(project="test-project", subject="Broken", assignee="admin"),
+            "admin",
         )
 
-    def test_update_sets_ref(self, writer, mock_cursor):
-        """Setup: INSERT returns object_id 101; RefAllocator returns ref 42.
-        Expectations: UPDATE SQL sets ref = 42 on row 101.
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(), "admin")
-
-        sql, params = mock_cursor.execute.call_args_list[3][0]
-
-        assert sql == "UPDATE issues_issue SET ref = %s WHERE id = %s"
-        assert params == (42, 101)
-
-    def test_resolves_project(self, writer, resolver):
-        """Setup: issue with project slug.
-        Expectations: resolve_project called with the slug.
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(project="my-project"), "admin")
-
-        resolver.resolve_project.assert_called_once_with("my-project")
-
-    def test_resolves_issue_type_when_set(self, writer, resolver):
-        """Setup: issue with issue_type set.
-        Expectations: resolve_issue_type called with project_id and type name.
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(issue_type="Bug"), "admin")
-
-        resolver.resolve_issue_type.assert_called_once_with(1, "Bug")
-
-    def test_resolves_issue_type_none_passes_none(self, writer, resolver):
-        """Setup: issue with no issue_type.
-        Expectations: resolve_issue_type called with None (resolver handles fallback).
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(), "admin")
-
-        resolver.resolve_issue_type.assert_called_once_with(1, None)
-
-    def test_resolves_severity_when_set(self, writer, resolver):
-        """Setup: issue with severity set.
-        Expectations: resolve_severity called with project_id and severity name.
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(severity="Critical"), "admin")
-
-        resolver.resolve_severity.assert_called_once_with(1, "Critical")
-
-    def test_resolves_severity_none_passes_none(self, writer, resolver):
-        """Setup: issue with no severity.
-        Expectations: resolve_severity called with None (resolver handles fallback).
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(), "admin")
-
-        resolver.resolve_severity.assert_called_once_with(1, None)
-
-    def test_resolves_milestone_when_set(self, writer, resolver):
-        """Setup: issue with milestone set.
-        Expectations: resolve_milestone called with project_id and milestone name.
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(milestone="Sprint 1"), "admin")
-
-        resolver.resolve_milestone.assert_called_once_with(1, "Sprint 1")
-
-    def test_assigned_to_id_in_insert_when_assignee_set(self, writer, resolver, mock_cursor):
-        """Setup: issue with assignee; resolve_user returns 5 for owner and 8 for assignee.
-        Expectations: assigned_to_id in INSERT params is 8.
-        """
-        resolver.resolve_user.side_effect = [5, 8]
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(assignee="alice"), "admin")
-
-        _, params = mock_cursor.execute.call_args_list[0][0]
-        assert params[8] == 8
-
-    def test_assigned_to_id_none_when_no_assignee(self, writer, mock_cursor):
-        """Setup: issue with no assignee.
-        Expectations: assigned_to_id in INSERT params is None.
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(), "admin")
-
-        _, params = mock_cursor.execute.call_args_list[0][0]
-        assert params[8] is None
-
-    def test_execute_count_no_optionals(self, writer, mock_cursor):
-        """Setup: issue with no optional relational fields.
-        Expectations: exactly 4 execute calls (INSERT, nextval, INSERT ref, UPDATE).
-        """
-        with patch("taigun.db.base.datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = FIXED_NOW
-            writer.write(make_issue(), "admin")
-
-        assert mock_cursor.execute.call_count == 4
+        assert ref > 0

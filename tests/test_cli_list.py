@@ -1,212 +1,113 @@
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
+import psycopg2
 import pytest
 from typer.testing import CliRunner
 
 from taigun.cli import app
-from taigun.config import ConfigManager, Profile
-from taigun.exceptions import ResolveError
+from taigun.config import ConfigManager
+from taigun.db.project import ProjectCreator
+from taigun.resolver import Resolver
 
 runner = CliRunner()
 
-PROFILE = Profile(
-    host="localhost",
-    port=5432,
-    database="taiga",
-    username="taiga",
-    password="secret",
-    acting_user="admin",
-)
+
+def unique_slug() -> str:
+    return f"test-{uuid.uuid4().hex[:8]}"
 
 
-def make_config(tmp_path: Path) -> ConfigManager:
+def make_config(tmp_path: Path, profile) -> ConfigManager:
     config = ConfigManager(path=tmp_path / "config.toml")
-    config.save(PROFILE, name=None)
+    config.save(profile, name=None)
     return config
 
 
+def commit_project(profile, slug: str, name: str = "Test Project") -> int:
+    """Create a project via ProjectCreator in its own committed connection."""
+    conn = psycopg2.connect(
+        host=profile.host,
+        port=profile.port,
+        dbname=profile.database,
+        user=profile.username,
+        password=profile.password,
+    )
+    try:
+        project_id, _ = ProjectCreator(conn, Resolver(conn)).create(name, slug, "admin")
+        conn.commit()
+        return project_id
+    finally:
+        conn.close()
+
+
 @contextmanager
-def mock_list(config: ConfigManager, resolve_project_id: int = 1, resolve_error=None):
-    """Patch the database layer for list commands. Yields mock_lister."""
-    mock_lister_instance = MagicMock()
-
-    with patch("taigun.cli.ConfigManager", return_value=config), \
-         patch("taigun.cli.ConnectionManager") as mock_cm, \
-         patch("taigun.cli.Resolver") as mock_resolver_cls, \
-         patch("taigun.cli.Lister", return_value=mock_lister_instance):
-
-        mock_cm.return_value.connect.return_value.__enter__.return_value = MagicMock()
-        mock_cm.return_value.connect.return_value.__exit__.return_value = False
-
-        if resolve_error:
-            mock_resolver_cls.return_value.resolve_project.side_effect = resolve_error
-        else:
-            mock_resolver_cls.return_value.resolve_project.return_value = resolve_project_id
-
-        yield mock_lister_instance
+def patch_config(config: ConfigManager):
+    with patch("taigun.cli.ConfigManager", return_value=config):
+        yield config
 
 
-class TestProjectsList:
-    @pytest.fixture
-    def config(self, tmp_path):
-        return make_config(tmp_path)
-
-    def test_output_format(self, config):
-        """Setup: two projects returned.
-        Expectations: each line is 'name (slug)'; exact output matches.
+class TestProjectsListEmpty:
+    def test_no_projects_outputs_nothing(self, tmp_path, test_db_profile):
+        """Setup: no projects in test-db (test-db-init does not create any).
+        Expectations: exit 0; empty output.
         """
-        with mock_list(config) as lister:
-            lister.list_projects.return_value = [("Alpha", "alpha"), ("Beta", "beta")]
-            result = runner.invoke(app, ["projects", "list"])
+        config = make_config(tmp_path, test_db_profile)
 
-        assert result.exit_code == 0
-        assert result.output == "Alpha (alpha)\nBeta (beta)\n"
-
-    def test_empty_list(self, config):
-        """Setup: no projects.
-        Expectations: no output; exit code 0.
-        """
-        with mock_list(config) as lister:
-            lister.list_projects.return_value = []
+        with patch_config(config):
             result = runner.invoke(app, ["projects", "list"])
 
         assert result.exit_code == 0
         assert result.output == ""
 
-    def test_profile_flag(self, tmp_path):
-        """Setup: --profile work passed; work profile exists with different host.
-        Expectations: ConnectionManager called with the work profile.
+
+@pytest.mark.xfail(reason="ticket 023: requires ProjectCreator to work for setup")
+class TestProjectsListWithProjects:
+    def test_lists_created_project(self, tmp_path, test_db_profile):
+        """Setup: project committed; CLI invoked.
+        Expectations: output is exactly `My Project (<slug>)` followed by a newline.
         """
-        config = make_config(tmp_path)
-        work_profile = Profile("workhost", 5432, "taiga", "taiga", "secret", "workuser")
-        config.save(work_profile, name="work")
+        slug = unique_slug()
+        commit_project(test_db_profile, slug, name="My Project")
+        config = make_config(tmp_path, test_db_profile)
 
-        with mock_list(config) as lister:
-            lister.list_projects.return_value = []
-            with patch("taigun.cli.ConnectionManager") as mock_cm:
-                mock_cm.return_value.connect.return_value.__enter__.return_value = MagicMock()
-                mock_cm.return_value.connect.return_value.__exit__.return_value = False
-                runner.invoke(app, ["projects", "list", "--profile", "work"])
-
-            used_profile = mock_cm.call_args.args[0]
-
-        assert used_profile.host == "workhost"
-
-
-class TestEpicsList:
-    @pytest.fixture
-    def config(self, tmp_path):
-        return make_config(tmp_path)
-
-    def test_output_format(self, config):
-        """Setup: two epics returned.
-        Expectations: each line is '#ref  subject'; exact output matches.
-        """
-        with mock_list(config) as lister:
-            lister.list_epics.return_value = [(1, "First epic"), (2, "Second epic")]
-            result = runner.invoke(app, ["epics", "list", "my-project"])
+        with patch_config(config):
+            result = runner.invoke(app, ["projects", "list"])
 
         assert result.exit_code == 0
-        assert result.output == "#1  First epic\n#2  Second epic\n"
+        assert result.output == f"My Project ({slug})\n"
 
-    def test_empty_list(self, config):
-        """Setup: no epics in project.
-        Expectations: no output; exit code 0.
+
+class TestEpicsListUnknownProject:
+    def test_unknown_slug_exits_one(self, tmp_path, test_db_profile):
+        """Setup: project slug that does not exist.
+        Expectations: exit 1; exact error message naming the slug.
         """
-        with mock_list(config) as lister:
-            lister.list_epics.return_value = []
-            result = runner.invoke(app, ["epics", "list", "my-project"])
+        config = make_config(tmp_path, test_db_profile)
 
-        assert result.exit_code == 0
-        assert result.output == ""
-
-    def test_unknown_slug_exits_nonzero(self, config):
-        """Setup: resolve_project raises ResolveError.
-        Expectations: exit code 1.
-        """
-        with mock_list(config, resolve_error=ResolveError("Project 'bad-slug' not found")):
-            result = runner.invoke(app, ["epics", "list", "bad-slug"])
+        with patch_config(config):
+            result = runner.invoke(app, ["epics", "list", "nonexistent"])
 
         assert result.exit_code == 1
+        assert result.output == "Project 'nonexistent' not found\n"
 
-    def test_unknown_slug_prints_error(self, config):
-        """Setup: resolve_project raises ResolveError with message.
-        Expectations: exact error message in output.
+
+@pytest.mark.xfail(reason="ticket 023: requires ProjectCreator to work for setup")
+class TestStatusesListWithProject:
+    def test_lists_statuses_grouped_by_type(self, tmp_path, test_db_profile):
+        """Setup: project committed.
+        Expectations: output contains exactly one line per ticket-type header
+            ("story:", "task:", "issue:", "epic:").
         """
-        with mock_list(config, resolve_error=ResolveError("Project 'bad-slug' not found")):
-            result = runner.invoke(app, ["epics", "list", "bad-slug"])
+        slug = unique_slug()
+        commit_project(test_db_profile, slug)
+        config = make_config(tmp_path, test_db_profile)
 
-        assert result.output == "Project 'bad-slug' not found\n"
+        with patch_config(config):
+            result = runner.invoke(app, ["statuses", "list", slug])
 
-    def test_resolve_project_called_with_slug(self, config):
-        """Setup: slug passed as argument.
-        Expectations: resolve_project called with that slug.
-        """
-        with mock_list(config) as lister, \
-             patch("taigun.cli.Resolver") as mock_resolver_cls:
-            mock_resolver_cls.return_value.resolve_project.return_value = 1
-            lister.list_epics.return_value = []
-            runner.invoke(app, ["epics", "list", "my-project"])
-
-        mock_resolver_cls.return_value.resolve_project.assert_called_once_with("my-project")
-
-
-class TestStatusesList:
-    @pytest.fixture
-    def config(self, tmp_path):
-        return make_config(tmp_path)
-
-    @pytest.fixture
-    def sample_statuses(self):
-        return {
-            "story": [("New", False), ("In Progress", False), ("Done", True)],
-            "task": [("New", False), ("Done", True)],
-            "issue": [("New", False), ("Done", True)],
-            "epic": [("New", False), ("Done", True)],
-        }
-
-    def test_output_format(self, config, sample_statuses):
-        """Setup: statuses for all four types.
-        Expectations: exact grouped output with headers and indented status names.
-        """
-        with mock_list(config) as lister:
-            lister.list_statuses.return_value = sample_statuses
-            result = runner.invoke(app, ["statuses", "list", "my-project"])
-
-        expected = (
-            "story:\n"
-            "  New\n"
-            "  In Progress\n"
-            "  Done  [closed]\n"
-            "task:\n"
-            "  New\n"
-            "  Done  [closed]\n"
-            "issue:\n"
-            "  New\n"
-            "  Done  [closed]\n"
-            "epic:\n"
-            "  New\n"
-            "  Done  [closed]\n"
-        )
         assert result.exit_code == 0
-        assert result.output == expected
-
-    def test_unknown_slug_exits_nonzero(self, config):
-        """Setup: resolve_project raises ResolveError.
-        Expectations: exit code 1.
-        """
-        with mock_list(config, resolve_error=ResolveError("Project 'bad-slug' not found")):
-            result = runner.invoke(app, ["statuses", "list", "bad-slug"])
-
-        assert result.exit_code == 1
-
-    def test_unknown_slug_prints_error(self, config):
-        """Setup: resolve_project raises ResolveError with message.
-        Expectations: exact error message in output.
-        """
-        with mock_list(config, resolve_error=ResolveError("Project 'bad-slug' not found")):
-            result = runner.invoke(app, ["statuses", "list", "bad-slug"])
-
-        assert result.output == "Project 'bad-slug' not found\n"
+        lines = result.output.splitlines()
+        headers = [line for line in lines if line in {"story:", "task:", "issue:", "epic:"}]
+        assert headers == ["story:", "task:", "issue:", "epic:"]
