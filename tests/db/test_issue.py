@@ -4,10 +4,9 @@ from taigun.db.issue import IssueWriter
 from taigun.models import Issue
 from taigun.resolver import Resolver
 
-from factories import make_project
+from factories import make_milestone, make_project
 
 
-@pytest.mark.xfail(reason="ticket 023: writer SQL bugs not yet fixed")
 class TestIssueWriter:
     def test_returns_positive_ref(self, real_conn):
         """Setup: project exists; issue has only required fields.
@@ -47,10 +46,11 @@ class TestIssueWriter:
         assert ref > 0
 
     def test_with_milestone_succeeds(self, real_conn):
-        """Setup: issue with milestone set to a known kanban milestone name.
+        """Setup: project + one milestone named 'Sprint 1'.
         Expectations: writer.write returns a ref without raising.
         """
-        make_project(real_conn)
+        project_id = make_project(real_conn)
+        make_milestone(real_conn, project_id, "Sprint 1")
         writer = IssueWriter(real_conn, Resolver(real_conn))
 
         ref = writer.write(

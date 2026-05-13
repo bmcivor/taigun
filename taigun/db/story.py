@@ -29,7 +29,6 @@ class StoryWriter(BaseWriter):
         """
         project_id, owner_id, status_id, now = self._resolve_common(story, acting_user)
         order = int(now.timestamp())
-        priority_id = self._resolver.resolve_priority(project_id, story.priority)
 
         assigned_to_id: Optional[int] = None
         if story.assignee is not None:
@@ -42,17 +41,19 @@ class StoryWriter(BaseWriter):
         with self._conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO userstories_userstory"
-                " (subject, description, project_id, status_id, priority_id, owner_id,"
+                " (subject, description, project_id, status_id, owner_id,"
                 "  assigned_to_id, milestone_id, ref, created_date, modified_date, version,"
-                "  backlog_order, sprint_order, kanban_order)"
-                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1, %s, %s, %s)"
+                "  backlog_order, sprint_order, kanban_order,"
+                "  is_blocked, blocked_note, is_closed,"
+                "  client_requirement, team_requirement, due_date_reason)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1, %s, %s, %s,"
+                "         false, '', false, false, false, '')"
                 " RETURNING id",
                 (
                     story.subject,
                     story.description,
                     project_id,
                     status_id,
-                    priority_id,
                     owner_id,
                     assigned_to_id,
                     milestone_id,
@@ -80,9 +81,9 @@ class StoryWriter(BaseWriter):
             epic_id = self._resolver.resolve_epic(project_id, story.epic)
             with self._conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO epics_relateduserstory (epic_id, user_story_id)"
-                    " VALUES (%s, %s)",
-                    (epic_id, object_id),
+                    'INSERT INTO epics_relateduserstory (epic_id, user_story_id, "order")'
+                    " VALUES (%s, %s, %s)",
+                    (epic_id, object_id, order),
                 )
 
         return ref

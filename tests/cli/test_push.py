@@ -3,12 +3,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
-import psycopg2
 import pytest
 from typer.testing import CliRunner
 
 from taigun.cli import app
-from taigun.config import ConfigManager
+from taigun.config import ConfigManager, Profile
 from taigun.db.project import ProjectCreator
 from taigun.resolver import Resolver
 
@@ -31,25 +30,6 @@ def make_config(tmp_path: Path, profile) -> ConfigManager:
     config = ConfigManager(path=tmp_path / "config.toml")
     config.save(profile, name=None)
     return config
-
-
-def commit_project(profile, slug: str, name: str = "Test Project") -> int:
-    """Create a project via ProjectCreator in its own connection and commit it,
-    so the project is visible to the CLI's separate connection.
-    """
-    conn = psycopg2.connect(
-        host=profile.host,
-        port=profile.port,
-        dbname=profile.database,
-        user=profile.username,
-        password=profile.password,
-    )
-    try:
-        project_id, _ = ProjectCreator(conn, Resolver(conn)).create(name, slug, "admin")
-        conn.commit()
-        return project_id
-    finally:
-        conn.close()
 
 
 @contextmanager
@@ -90,15 +70,14 @@ class TestPushParseErrors:
         assert any(line.startswith("✗ broken.md:") for line in lines)
 
 
-@pytest.mark.xfail(reason="ticket 023: push requires writer SQL bugs to be fixed")
 class TestPushSuccess:
-    def test_pushes_single_story(self, tmp_path, test_db_profile):
+    def test_pushes_single_story(self, tmp_path, test_db_profile, cli_conn):
         """Setup: project exists; valid story ticket file.
         Expectations: output is exactly one success line matching the format
             `✓ #<ref> story: "Hello"` (ref is dynamic so use endswith).
         """
         slug = unique_slug()
-        commit_project(test_db_profile, slug)
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Hello")
 
@@ -110,12 +89,12 @@ class TestPushSuccess:
         assert len(lines) == 1
         assert lines[0].startswith("✓ #") and lines[0].endswith(' story: "Hello"')
 
-    def test_pushes_multiple_files(self, tmp_path, test_db_profile):
+    def test_pushes_multiple_files(self, tmp_path, test_db_profile, cli_conn):
         """Setup: project exists; two valid ticket files.
         Expectations: two success lines; exit 0.
         """
         slug = unique_slug()
-        commit_project(test_db_profile, slug)
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
         config = make_config(tmp_path, test_db_profile)
         a = write_ticket(tmp_path, "a.md", "story", slug, subject="A")
         b = write_ticket(tmp_path, "b.md", "story", slug, subject="B")
@@ -126,12 +105,12 @@ class TestPushSuccess:
         assert result.exit_code == 0
         assert result.output.count("✓") == 2
 
-    def test_dry_run_outputs_tilde_marker(self, tmp_path, test_db_profile):
+    def test_dry_run_outputs_tilde_marker(self, tmp_path, test_db_profile, cli_conn):
         """Setup: --dry-run; project exists; valid ticket file.
         Expectations: output is exactly `~ story: "Dry"` (no ref, no ✓).
         """
         slug = unique_slug()
-        commit_project(test_db_profile, slug)
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Dry")
 
@@ -141,13 +120,13 @@ class TestPushSuccess:
         assert result.exit_code == 0
         assert result.output == '~ story: "Dry"\n'
 
-    def test_partial_failure_exits_one(self, tmp_path, test_db_profile):
+    def test_partial_failure_exits_one(self, tmp_path, test_db_profile, cli_conn):
         """Setup: project committed; one valid ticket and one malformed file.
         Expectations: exit 1; output contains both a success line and an
             error line for the bad file.
         """
         slug = unique_slug()
-        commit_project(test_db_profile, slug)
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
         config = make_config(tmp_path, test_db_profile)
         good = write_ticket(tmp_path, "good.md", "story", slug, subject="Good")
         bad = tmp_path / "bad.md"
@@ -160,15 +139,15 @@ class TestPushSuccess:
         assert result.output.count("✓") == 1
         assert result.output.count("✗") == 1
 
-    def test_profile_flag_uses_named_profile(self, tmp_path, test_db_profile):
+    def test_profile_flag_uses_named_profile(self, tmp_path, test_db_profile, cli_conn):
         """Setup: 'work' profile saved with test-db credentials; default profile
             saved with deliberately wrong credentials. Push with --profile work.
         Expectations: exit 0 (the work profile's credentials are used).
         """
         slug = unique_slug()
-        commit_project(test_db_profile, slug)
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
         config = ConfigManager(path=tmp_path / "config.toml")
-        bad_default = type(test_db_profile)(
+        bad_default = Profile(
             host="nonexistent-host",
             port=5432,
             database="taiga",

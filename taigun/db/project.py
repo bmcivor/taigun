@@ -1,3 +1,4 @@
+import datetime
 import json
 from typing import Tuple
 
@@ -80,11 +81,34 @@ class ProjectCreator:
         }
 
     def _insert_project(self, name: str, slug: str, owner_id: int, template_id: int) -> int:
+        now = datetime.datetime.now(datetime.timezone.utc)
         with self._conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO projects_project (name, slug, owner_id, creation_template_id)"
-                " VALUES (%s, %s, %s, %s) RETURNING id",
-                (name, slug, owner_id, template_id),
+                "INSERT INTO projects_project"
+                " (name, slug, description, owner_id, creation_template_id,"
+                "  created_date, modified_date, totals_updated_datetime,"
+                "  is_contact_activated, is_epics_activated, is_backlog_activated,"
+                "  is_kanban_activated, is_wiki_activated, is_issues_activated,"
+                "  is_private, is_featured, is_looking_for_people,"
+                "  looking_for_people_note,"
+                "  anon_permissions, public_permissions,"
+                "  total_fans, total_fans_last_week, total_fans_last_month,"
+                "  total_fans_last_year,"
+                "  total_activity, total_activity_last_week,"
+                "  total_activity_last_month, total_activity_last_year)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s,"
+                "         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
+                "         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                " RETURNING id",
+                (
+                    name, slug, "", owner_id, template_id,
+                    now, now, now,
+                    False, False, False, False, False, False,
+                    False, False, False, "",
+                    [], [],
+                    0, 0, 0, 0,
+                    0, 0, 0, 0,
+                ),
             )
             return cur.fetchone()[0]
 
@@ -99,19 +123,25 @@ class ProjectCreator:
                 self._insert_status(table, project_id, entry)
 
     def _insert_status(self, table: str, project_id: int, entry: dict) -> None:
+        columns = ["project_id", "name", "slug", "color", '"order"', "is_closed"]
+        values = [
+            project_id,
+            entry["name"],
+            entry["slug"],
+            entry.get("color", "#999999"),
+            entry.get("order", 1),
+            entry.get("is_closed", False),
+        ]
+
+        if table == "projects_userstorystatus":
+            columns.append("is_archived")
+            values.append(False)
+
+        placeholders = ", ".join(["%s"] * len(values))
         with self._conn.cursor() as cur:
             cur.execute(
-                f"INSERT INTO {table}"
-                f" (project_id, name, slug, color, \"order\", is_closed)"
-                f" VALUES (%s, %s, %s, %s, %s, %s)",
-                (
-                    project_id,
-                    entry["name"],
-                    entry["slug"],
-                    entry.get("color", "#999999"),
-                    entry.get("order", 1),
-                    entry.get("is_closed", False),
-                ),
+                f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})",
+                tuple(values),
             )
 
     def _materialise_lookups(self, project_id: int, template: dict) -> None:
@@ -204,9 +234,14 @@ class ProjectCreator:
         with self._conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO projects_membership"
-                " (project_id, user_id, role_id, is_admin, created_at)"
-                " VALUES (%s, %s, %s, true, NOW())",
-                (project_id, owner_id, role_id),
+                " (project_id, user_id, role_id, is_admin, created_at, user_order)"
+                " VALUES (%s, %s, %s, true, NOW(), %s)",
+                (
+                    project_id,
+                    owner_id,
+                    role_id,
+                    int(datetime.datetime.now().timestamp() * 1000),
+                ),
             )
 
     def _insert_role(self, project_id: int, role: dict) -> None:

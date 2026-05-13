@@ -37,8 +37,9 @@ class RefAllocator:
 
         with self._conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO references_reference (ref, object_id, content_type_id, project_id)"
-                " VALUES (%s, %s, %s, %s)",
+                "INSERT INTO references_reference"
+                " (ref, object_id, content_type_id, project_id, created_at)"
+                " VALUES (%s, %s, %s, %s, NOW())",
                 (ref, object_id, content_type_id, project_id),
             )
 

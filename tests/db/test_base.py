@@ -19,7 +19,6 @@ class StubWriter(BaseWriter):
         pass
 
 
-@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
 class TestBaseWriterResolveStatus:
     def test_resolves_named_status_returns_positive_id(self, real_conn):
         """Setup: project with default kanban template ('New' is a known story status).

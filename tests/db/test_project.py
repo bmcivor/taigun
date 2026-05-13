@@ -6,7 +6,6 @@ from taigun.db.project import ProjectCreator, ProjectExistsError
 from taigun.resolver import Resolver
 
 
-@pytest.mark.xfail(reason="ticket 023: ProjectCreator SQL not yet verified against real schema")
 class TestProjectCreator:
     def test_returns_id_and_slug(self, real_conn):
         """Setup: clean test-db with default ProjectTemplate.

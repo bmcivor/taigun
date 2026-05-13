@@ -25,7 +25,6 @@ class TestListProjectsEmpty:
         assert projects == []
 
 
-@pytest.mark.xfail(reason="ticket 023: ProjectCreator must work for setup")
 class TestListProjects:
     def test_returns_name_slug_pair_after_create(self, real_conn):
         """Setup: one project created.
@@ -50,7 +49,6 @@ class TestListProjects:
         assert names == ["Alpha", "Mu", "Zeta"]
 
 
-@pytest.mark.xfail(reason="ticket 023: ProjectCreator must work for setup")
 class TestListEpics:
     def test_returns_empty_list_when_project_has_no_epics(self, real_conn):
         """Setup: project with no epics written.
@@ -90,7 +88,6 @@ class TestListEpics:
         assert [ref for ref, _ in epics] == [ref_a, ref_b, ref_c]
 
 
-@pytest.mark.xfail(reason="ticket 023: ProjectCreator must work for setup")
 class TestListStatuses:
     def test_returns_entries_for_all_four_types(self, real_conn):
         """Setup: project from default kanban template.
