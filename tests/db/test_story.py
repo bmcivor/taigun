@@ -1,7 +1,8 @@
 import pytest
 
+from taigun.db.epic import EpicWriter
 from taigun.db.story import StoryWriter
-from taigun.models import Story
+from taigun.models import Epic, Story
 from taigun.resolver import Resolver
 
 from factories import make_project
@@ -54,6 +55,69 @@ class TestStoryWriter:
 
         ref = writer.write(
             Story(project="test-project", subject="Hello", assignee="admin"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_milestone_succeeds(self, real_conn):
+        """Setup: story with milestone set to a known kanban milestone name.
+        Expectations: writer.write returns a ref without raising.
+
+        (Milestones from the default kanban template — if none exist on the
+        materialised project, this exercises the resolver-not-found path and
+        documents that gap; for now it's part of the xfail bug class.)
+        """
+        make_project(real_conn)
+        writer = StoryWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Story(project="test-project", subject="Hello", milestone="Sprint 1"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_epic_link_succeeds(self, real_conn):
+        """Setup: epic written first; story with epic ref pointing at it.
+        Expectations: story write returns a ref; resolver can find the story.
+        """
+        project_id = make_project(real_conn)
+        resolver = Resolver(real_conn)
+        epic_ref = EpicWriter(real_conn, resolver).write(
+            Epic(project="test-project", subject="Parent epic"), "admin"
+        )
+
+        story_ref = StoryWriter(real_conn, resolver).write(
+            Story(project="test-project", subject="Linked", epic=epic_ref), "admin"
+        )
+
+        assert story_ref > 0
+        assert Resolver(real_conn).resolve_story(project_id, story_ref) > 0
+
+    def test_with_custom_status(self, real_conn):
+        """Setup: story with status set to a known kanban status name.
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = StoryWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Story(project="test-project", subject="Hello", status="In progress"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_custom_priority(self, real_conn):
+        """Setup: story with priority set to a known kanban priority name.
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = StoryWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Story(project="test-project", subject="Hello", priority="High"),
             "admin",
         )
 

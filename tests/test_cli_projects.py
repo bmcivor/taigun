@@ -79,3 +79,44 @@ class TestProjectsCreate:
 
         assert result.exit_code == 1
         assert result.output == f"Project with slug '{slug}' already exists\n"
+
+    def test_unknown_acting_user_exits_nonzero(self, tmp_path, test_db_profile):
+        """Setup: profile with acting_user='nobody' (does not exist).
+        Expectations: exit 1; output mentions the unknown user.
+        """
+        from taigun.config import Profile
+
+        bad_user_profile = Profile(
+            host=test_db_profile.host,
+            port=test_db_profile.port,
+            database=test_db_profile.database,
+            username=test_db_profile.username,
+            password=test_db_profile.password,
+            acting_user="nobody",
+        )
+        config = make_config(tmp_path, bad_user_profile)
+
+        with patch_config(config):
+            result = runner.invoke(app, ["projects", "create", "Test", unique_slug()])
+
+        assert result.exit_code == 1
+        assert result.output == "User 'nobody' not found\n"
+
+    def test_profile_flag_uses_named_profile(self, tmp_path, test_db_profile):
+        """Setup: 'work' profile with test-db creds; bad default profile.
+        Expectations: `projects create ... --profile work` exits 0.
+        """
+        config = ConfigManager(path=tmp_path / "config.toml")
+        from taigun.config import Profile
+
+        bad_default = Profile("nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin")
+        config.save(bad_default, name=None)
+        config.save(test_db_profile, name="work")
+
+        with patch_config(config):
+            result = runner.invoke(
+                app,
+                ["projects", "create", "--profile", "work", "Test", unique_slug()],
+            )
+
+        assert result.exit_code == 0

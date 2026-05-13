@@ -45,3 +45,73 @@ class TestIssueWriter:
         )
 
         assert ref > 0
+
+    def test_with_milestone_succeeds(self, real_conn):
+        """Setup: issue with milestone set to a known kanban milestone name.
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = IssueWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Issue(project="test-project", subject="Broken", milestone="Sprint 1"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_custom_issue_type(self, real_conn):
+        """Setup: issue with issue_type set to a known kanban type ("Question").
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = IssueWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Issue(project="test-project", subject="Question", issue_type="Question"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_custom_severity(self, real_conn):
+        """Setup: issue with severity set to a known kanban severity ("Critical").
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = IssueWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Issue(project="test-project", subject="Crash", severity="Critical"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_custom_priority(self, real_conn):
+        """Setup: issue with priority set to a known kanban priority ("High").
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = IssueWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Issue(project="test-project", subject="Urgent", priority="High"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_custom_status(self, real_conn):
+        """Setup: issue with status set to a known kanban issue status.
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = IssueWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Issue(project="test-project", subject="WIP", status="In progress"),
+            "admin",
+        )
+
+        assert ref > 0

@@ -45,3 +45,56 @@ class TestEpicWriter:
         ref_b = writer.write(Epic(project="test-project", subject="B"), "admin")
 
         assert ref_b == ref_a + 1
+
+    def test_with_assignee_succeeds(self, real_conn):
+        """Setup: epic with assignee set to the existing admin user.
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = EpicWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Epic(project="test-project", subject="Assigned", assignee="admin"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_explicit_color_succeeds(self, real_conn):
+        """Setup: epic with explicit color #abcdef.
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = EpicWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Epic(project="test-project", subject="Coloured", color="#abcdef"),
+            "admin",
+        )
+
+        assert ref > 0
+
+    def test_with_auto_color_succeeds(self, real_conn):
+        """Setup: epic with no color (writer picks a random one).
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = EpicWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(Epic(project="test-project", subject="No colour"), "admin")
+
+        assert ref > 0
+
+    def test_with_custom_status(self, real_conn):
+        """Setup: epic with status set to a known kanban epic status.
+        Expectations: writer.write returns a ref without raising.
+        """
+        make_project(real_conn)
+        writer = EpicWriter(real_conn, Resolver(real_conn))
+
+        ref = writer.write(
+            Epic(project="test-project", subject="WIP", status="In progress"),
+            "admin",
+        )
+
+        assert ref > 0

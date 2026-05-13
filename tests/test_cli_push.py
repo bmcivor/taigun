@@ -140,3 +140,47 @@ class TestPushSuccess:
 
         assert result.exit_code == 0
         assert result.output == '~ story: "Dry"\n'
+
+    def test_partial_failure_exits_one(self, tmp_path, test_db_profile):
+        """Setup: project committed; one valid ticket and one malformed file.
+        Expectations: exit 1; output contains both a success line and an
+            error line for the bad file.
+        """
+        slug = unique_slug()
+        commit_project(test_db_profile, slug)
+        config = make_config(tmp_path, test_db_profile)
+        good = write_ticket(tmp_path, "good.md", "story", slug, subject="Good")
+        bad = tmp_path / "bad.md"
+        bad.write_text("---\ntype: story\n---\n\n## Title\n")
+
+        with patch_config(config):
+            result = runner.invoke(app, ["push", str(good), str(bad)])
+
+        assert result.exit_code == 1
+        assert result.output.count("✓") == 1
+        assert result.output.count("✗") == 1
+
+    def test_profile_flag_uses_named_profile(self, tmp_path, test_db_profile):
+        """Setup: 'work' profile saved with test-db credentials; default profile
+            saved with deliberately wrong credentials. Push with --profile work.
+        Expectations: exit 0 (the work profile's credentials are used).
+        """
+        slug = unique_slug()
+        commit_project(test_db_profile, slug)
+        config = ConfigManager(path=tmp_path / "config.toml")
+        bad_default = type(test_db_profile)(
+            host="nonexistent-host",
+            port=5432,
+            database="taiga",
+            username="taiga",
+            password="taiga",
+            acting_user="admin",
+        )
+        config.save(bad_default, name=None)
+        config.save(test_db_profile, name="work")
+        ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Hello")
+
+        with patch_config(config):
+            result = runner.invoke(app, ["push", "--profile", "work", str(ticket)])
+
+        assert result.exit_code == 0
