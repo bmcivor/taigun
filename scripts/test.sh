@@ -7,4 +7,9 @@ cleanup() {
 trap cleanup EXIT
 
 cleanup
-docker compose run --rm test "$@"
+
+if [[ $# -gt 0 ]]; then
+    docker compose run --rm test uv run pytest "$@"
+else
+    docker compose run --rm test
+fi

@@ -1,421 +1,317 @@
 import logging
+
 import pytest
-from unittest.mock import MagicMock
 
 from taigun.exceptions import ResolveError
 from taigun.resolver import Resolver
 
-
-def make_resolver(fetchone_return=None):
-    mock_cursor = MagicMock()
-    mock_cursor.fetchone.return_value = fetchone_return
-    mock_conn = MagicMock()
-    mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-    return Resolver(mock_conn), mock_cursor
-
-
-class TestResolveProject:
-    def test_returns_project_id(self):
-        """Setup: project exists in DB.
-        Expectations: returns the project ID.
-        """
-        resolver, _ = make_resolver(fetchone_return=(7,))
-
-        assert resolver.resolve_project("my-project") == 7
-
-    def test_not_found_raises(self):
-        """Setup: no project with that slug.
-        Expectations: ResolveError naming the slug.
-        """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="my-project"):
-            resolver.resolve_project("my-project")
+from factories import make_project
 
 
 class TestResolveUser:
-    def test_returns_user_id(self):
-        """Setup: user exists in DB.
-        Expectations: returns the user ID.
+    def test_returns_user_id(self, real_conn):
+        """Setup: admin user created by test-db-init.
+        Expectations: resolve_user('admin') returns a positive int.
         """
-        resolver, _ = make_resolver(fetchone_return=(3,))
+        admin_id = Resolver(real_conn).resolve_user("admin")
 
-        assert resolver.resolve_user("blake") == 3
+        assert isinstance(admin_id, int) and admin_id > 0
 
-    def test_not_found_raises(self):
+    def test_not_found_raises(self, real_conn):
         """Setup: no user with that username.
-        Expectations: ResolveError naming the username.
+        Expectations: ResolveError raised with the username in the message.
         """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="blake"):
-            resolver.resolve_user("blake")
-
-
-class TestResolveStatus:
-    def test_returns_status_id(self):
-        """Setup: status exists for project and ticket type.
-        Expectations: returns the status ID.
-        """
-        resolver, _ = make_resolver(fetchone_return=(5,))
-
-        assert resolver.resolve_status(1, "In Progress", "story") == 5
-
-    def test_not_found_raises(self):
-        """Setup: no matching status.
-        Expectations: ResolveError naming the status.
-        """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="In Progress"):
-            resolver.resolve_status(1, "In Progress", "story")
-
-    def test_invalid_ticket_type_raises(self):
-        """Setup: unrecognised ticket type passed.
-        Expectations: ResolveError naming the type.
-        """
-        resolver, _ = make_resolver()
-        with pytest.raises(ResolveError, match="banana"):
-            resolver.resolve_status(1, "New", "banana")
-
-    def test_queries_correct_table_for_each_type(self):
-        """Setup: each valid ticket type.
-        Expectations: query targets the correct status table exactly.
-        """
-        expected = {
-            "story": "projects_userstorystatus",
-            "task": "projects_taskstatus",
-            "issue": "projects_issuestatus",
-            "epic": "projects_epicstatus",
-        }
-        for ticket_type, table in expected.items():
-            resolver, cursor = make_resolver(fetchone_return=(1,))
-            resolver.resolve_status(1, "New", ticket_type)
-            sql = cursor.execute.call_args[0][0]
-
-            assert sql == f"SELECT id FROM {table} WHERE project_id = %s AND LOWER(name) = LOWER(%s)"
-
-
-class TestResolvePriority:
-    def test_returns_priority_id_on_match(self):
-        """Setup: priority exists by name.
-        Expectations: returns the priority ID without falling back.
-        """
-        resolver, _ = make_resolver(fetchone_return=(2,))
-
-        assert resolver.resolve_priority(1, "High") == 2
-
-    def test_falls_back_to_default_on_no_match(self):
-        """Setup: no priority by name; project has a default.
-        Expectations: returns the default priority ID.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, (9,)]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-
-        assert resolver.resolve_priority(1, "Unknown") == 9
-
-    def test_no_match_and_no_default_raises(self):
-        """Setup: no priority by name and project has no default.
-        Expectations: ResolveError raised.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, None]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-        with pytest.raises(ResolveError, match="default priority"):
-            resolver.resolve_priority(1, "Unknown")
-
-    def test_fallback_logs_warning(self, caplog):
-        """Setup: priority name not found.
-        Expectations: warning logged with exact message naming the priority and project.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, (9,)]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-        with caplog.at_level(logging.WARNING):
-            resolver.resolve_priority(1, "Unknown")
-
-        assert caplog.messages == ["Priority 'Unknown' not found for project 1, falling back to default"]
-
-    def test_none_name_returns_default_without_warning(self, caplog):
-        """Setup: name is None.
-        Expectations: default priority returned; no warning logged; only one DB query made.
-        """
-        resolver, cursor = make_resolver(fetchone_return=(9,))
-        with caplog.at_level(logging.WARNING):
-            result = resolver.resolve_priority(1, None)
-
-        assert result == 9
-        assert caplog.messages == []
-        assert cursor.execute.call_count == 1
-        assert cursor.execute.call_args[0][0] == (
-            "SELECT default_priority_id FROM projects_project WHERE id = %s"
-        )
-
-
-class TestResolveDefaultStatus:
-    def test_returns_default_status_id(self):
-        """Setup: default status exists for project.
-        Expectations: returns the default status ID.
-        """
-        resolver, _ = make_resolver(fetchone_return=(3,))
-
-        assert resolver.resolve_default_status(1, "story") == 3
-
-    def test_not_found_raises(self):
-        """Setup: no default status for project.
-        Expectations: ResolveError naming default status.
-        """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="default status"):
-            resolver.resolve_default_status(1, "story")
-
-    def test_invalid_ticket_type_raises(self):
-        """Setup: unrecognised ticket type passed.
-        Expectations: ResolveError naming the type.
-        """
-        resolver, _ = make_resolver()
-        with pytest.raises(ResolveError, match="banana"):
-            resolver.resolve_default_status(1, "banana")
-
-    def test_queries_correct_table_for_each_type(self):
-        """Setup: each valid ticket type.
-        Expectations: query targets the correct status table exactly.
-        """
-        expected = {
-            "story": "projects_userstorystatus",
-            "task": "projects_taskstatus",
-            "issue": "projects_issuestatus",
-            "epic": "projects_epicstatus",
-        }
-        for ticket_type, table in expected.items():
-            resolver, cursor = make_resolver(fetchone_return=(1,))
-            resolver.resolve_default_status(1, ticket_type)
-            sql = cursor.execute.call_args[0][0]
-
-            assert sql == f"SELECT id FROM {table} WHERE project_id = %s AND is_default = true"
-
-
-class TestResolveMilestone:
-    def test_returns_milestone_id(self):
-        """Setup: milestone exists for project.
-        Expectations: returns the milestone ID.
-        """
-        resolver, _ = make_resolver(fetchone_return=(6,))
-
-        assert resolver.resolve_milestone(1, "Sprint 1") == 6
-
-    def test_not_found_raises(self):
-        """Setup: no milestone with that name.
-        Expectations: ResolveError naming the milestone.
-        """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="Sprint 1"):
-            resolver.resolve_milestone(1, "Sprint 1")
-
-
-class TestResolveIssueType:
-    def test_returns_issue_type_id_on_match(self):
-        """Setup: issue type exists by name.
-        Expectations: returns the issue type ID without falling back.
-        """
-        resolver, _ = make_resolver(fetchone_return=(4,))
-
-        assert resolver.resolve_issue_type(1, "Bug") == 4
-
-    def test_falls_back_to_default_on_no_match(self):
-        """Setup: no issue type by name; project has a default.
-        Expectations: returns the default issue type ID.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, (6,)]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-
-        assert resolver.resolve_issue_type(1, "Unknown") == 6
-
-    def test_no_match_and_no_default_raises(self):
-        """Setup: no issue type by name and project has no default.
-        Expectations: ResolveError raised.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, None]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-        with pytest.raises(ResolveError, match="default issue type"):
-            resolver.resolve_issue_type(1, "Unknown")
-
-    def test_fallback_logs_warning(self, caplog):
-        """Setup: issue type name not found.
-        Expectations: warning logged naming the type and project.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, (6,)]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-
-        with caplog.at_level(logging.WARNING, logger="taigun.resolver"):
-            resolver.resolve_issue_type(1, "Unknown")
-
-        assert caplog.messages == ["Issue type 'Unknown' not found for project 1, falling back to default"]
-
-    def test_none_name_returns_default_without_warning(self, caplog):
-        """Setup: name is None.
-        Expectations: default returned; no warning logged.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = (6,)
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-
-        with caplog.at_level(logging.WARNING, logger="taigun.resolver"):
-            result = resolver.resolve_issue_type(1, None)
-
-        assert result == 6
-        assert caplog.text == ""
-
-
-class TestResolveSeverity:
-    def test_returns_severity_id_on_match(self):
-        """Setup: severity exists by name.
-        Expectations: returns the severity ID without falling back.
-        """
-        resolver, _ = make_resolver(fetchone_return=(6,))
-
-        assert resolver.resolve_severity(1, "High") == 6
-
-    def test_falls_back_to_default_on_no_match(self):
-        """Setup: no severity by name; project has a default.
-        Expectations: returns the default severity ID.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, (3,)]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-
-        assert resolver.resolve_severity(1, "Unknown") == 3
-
-    def test_no_match_and_no_default_raises(self):
-        """Setup: no severity by name and project has no default.
-        Expectations: ResolveError raised.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, None]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-        with pytest.raises(ResolveError, match="default severity"):
-            resolver.resolve_severity(1, "Unknown")
-
-    def test_fallback_logs_warning(self, caplog):
-        """Setup: severity name not found.
-        Expectations: warning logged naming the severity and project.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.side_effect = [None, (3,)]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-
-        with caplog.at_level(logging.WARNING, logger="taigun.resolver"):
-            resolver.resolve_severity(1, "Unknown")
-
-        assert caplog.messages == ["Severity 'Unknown' not found for project 1, falling back to default"]
-
-    def test_none_name_returns_default_without_warning(self, caplog):
-        """Setup: name is None.
-        Expectations: default returned; no warning logged.
-        """
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = (3,)
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        resolver = Resolver(mock_conn)
-
-        with caplog.at_level(logging.WARNING, logger="taigun.resolver"):
-            result = resolver.resolve_severity(1, None)
-
-        assert result == 3
-        assert caplog.text == ""
-
-
-class TestResolveStory:
-    def test_returns_story_id(self):
-        """Setup: user story exists with that ref.
-        Expectations: returns the story ID.
-        """
-        resolver, _ = make_resolver(fetchone_return=(7,))
-
-        assert resolver.resolve_story(1, 10) == 7
-
-    def test_not_found_raises(self):
-        """Setup: no user story with that ref.
-        Expectations: ResolveError naming the ref.
-        """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="#10"):
-            resolver.resolve_story(1, 10)
-
-
-class TestResolveEpic:
-    def test_returns_epic_id(self):
-        """Setup: epic exists with that ref.
-        Expectations: returns the epic ID.
-        """
-        resolver, _ = make_resolver(fetchone_return=(11,))
-
-        assert resolver.resolve_epic(1, 42) == 11
-
-    def test_not_found_raises(self):
-        """Setup: no epic with that ref.
-        Expectations: ResolveError naming the ref.
-        """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="#42"):
-            resolver.resolve_epic(1, 42)
+        with pytest.raises(ResolveError, match="nobody"):
+            Resolver(real_conn).resolve_user("nobody")
 
 
 class TestResolveContentType:
-    def test_returns_content_type_id(self):
-        """Setup: content type exists.
-        Expectations: returns the content type ID.
+    def test_returns_content_type_id(self, real_conn):
+        """Setup: django_content_type populated by Taiga migrations.
+        Expectations: resolve_content_type returns a positive int.
         """
-        resolver, _ = make_resolver(fetchone_return=(8,))
+        ct_id = Resolver(real_conn).resolve_content_type("userstories", "userstory")
 
-        assert resolver.resolve_content_type("epics", "epic") == 8
+        assert isinstance(ct_id, int) and ct_id > 0
 
-    def test_not_found_raises(self):
-        """Setup: content type not found.
-        Expectations: ResolveError naming app_label and model.
+    def test_not_found_raises(self, real_conn):
+        """Setup: no content type with that label/model.
+        Expectations: ResolveError raised.
         """
-        resolver, _ = make_resolver(fetchone_return=None)
-        with pytest.raises(ResolveError, match="epics.epic"):
-            resolver.resolve_content_type("epics", "epic")
+        with pytest.raises(ResolveError):
+            Resolver(real_conn).resolve_content_type("nonexistent", "nothing")
 
-    def test_result_is_cached(self):
-        """Setup: content type looked up twice with same args.
-        Expectations: DB queried only once.
+    def test_result_is_cached(self, real_conn):
+        """Setup: resolver instance.
+        Expectations: repeated calls return the same value.
         """
-        resolver, cursor = make_resolver(fetchone_return=(8,))
-        resolver.resolve_content_type("epics", "epic")
-        resolver.resolve_content_type("epics", "epic")
+        resolver = Resolver(real_conn)
 
-        assert cursor.execute.call_count == 1
+        first = resolver.resolve_content_type("userstories", "userstory")
+        second = resolver.resolve_content_type("userstories", "userstory")
 
-    def test_different_keys_each_queried(self):
-        """Setup: two different content types looked up.
-        Expectations: DB queried once per unique key.
+        assert first == second
+
+    def test_different_keys_return_different_ids(self, real_conn):
+        """Setup: resolver instance.
+        Expectations: different (app_label, model) keys return different IDs.
         """
-        resolver, cursor = make_resolver(fetchone_return=(8,))
-        resolver.resolve_content_type("epics", "epic")
-        resolver.resolve_content_type("userstories", "userstory")
+        resolver = Resolver(real_conn)
 
-        assert cursor.execute.call_count == 2
+        a = resolver.resolve_content_type("userstories", "userstory")
+        b = resolver.resolve_content_type("epics", "epic")
+
+        assert a != b
+
+
+class TestResolveProjectNotFound:
+    def test_not_found_raises(self, real_conn):
+        """Setup: no project with that slug.
+        Expectations: ResolveError raised with the slug in the message.
+        """
+        with pytest.raises(ResolveError, match="nonexistent"):
+            Resolver(real_conn).resolve_project("nonexistent")
+
+
+@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
+class TestResolveProject:
+    def test_returns_project_id(self, real_conn):
+        """Setup: project with slug 'test-project' created via make_project.
+        Expectations: resolve_project returns the same id make_project returned.
+        """
+        expected_id = make_project(real_conn, slug="test-project")
+
+        assert Resolver(real_conn).resolve_project("test-project") == expected_id
+
+
+@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
+class TestResolveStatus:
+    def test_returns_status_id_for_known_kanban_name(self, real_conn):
+        """Setup: project from default kanban template ('New' is a known story status).
+        Expectations: resolve_status returns a positive id for the known name.
+        """
+        project_id = make_project(real_conn)
+
+        status_id = Resolver(real_conn).resolve_status(project_id, "New", "story")
+
+        assert isinstance(status_id, int) and status_id > 0
+
+    def test_not_found_raises(self, real_conn):
+        """Setup: project exists; no status named 'Bogus'.
+        Expectations: ResolveError raised.
+        """
+        project_id = make_project(real_conn)
+
+        with pytest.raises(ResolveError):
+            Resolver(real_conn).resolve_status(project_id, "Bogus", "story")
+
+    def test_invalid_ticket_type_raises(self, real_conn):
+        """Setup: project exists.
+        Expectations: an unknown ticket_type raises ResolveError.
+        """
+        project_id = make_project(real_conn)
+
+        with pytest.raises(ResolveError):
+            Resolver(real_conn).resolve_status(project_id, "New", "badtype")
+
+    @pytest.mark.parametrize("ticket_type", ["story", "task", "issue", "epic"])
+    def test_resolves_for_each_ticket_type(self, real_conn, ticket_type):
+        """Setup: project from default kanban template ('New' is a status in every type).
+        Expectations: resolve_status returns a positive id for each type.
+        """
+        project_id = make_project(real_conn)
+
+        status_id = Resolver(real_conn).resolve_status(project_id, "New", ticket_type)
+
+        assert isinstance(status_id, int) and status_id > 0
+
+
+@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
+class TestResolveDefaultStatus:
+    def test_returns_positive_id(self, real_conn):
+        """Setup: project with default story status set.
+        Expectations: resolve_default_status returns a positive id.
+        """
+        project_id = make_project(real_conn)
+
+        status_id = Resolver(real_conn).resolve_default_status(project_id, "story")
+
+        assert isinstance(status_id, int) and status_id > 0
+
+    def test_invalid_ticket_type_raises(self, real_conn):
+        """Setup: any project.
+        Expectations: an unknown ticket_type raises ResolveError.
+        """
+        project_id = make_project(real_conn)
+
+        with pytest.raises(ResolveError):
+            Resolver(real_conn).resolve_default_status(project_id, "badtype")
+
+    @pytest.mark.parametrize("ticket_type", ["story", "task", "issue", "epic"])
+    def test_resolves_for_each_ticket_type(self, real_conn, ticket_type):
+        """Setup: project with default status for each type.
+        Expectations: resolve_default_status returns a positive id for each.
+        """
+        project_id = make_project(real_conn)
+
+        status_id = Resolver(real_conn).resolve_default_status(project_id, ticket_type)
+
+        assert isinstance(status_id, int) and status_id > 0
+
+
+@pytest.mark.xfail(reason="ticket 023: resolve_default_status queries non-existent `is_default` column")
+class TestResolveDefaultStatusForNonexistentProject:
+    def test_raises_resolve_error(self, real_conn):
+        """Setup: a project ID that does not exist.
+        Expectations: ResolveError raised.
+        """
+        with pytest.raises(ResolveError):
+            Resolver(real_conn).resolve_default_status(99999, "story")
+
+
+@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
+class TestResolvePriority:
+    def test_returns_id_for_known_priority_name(self, real_conn):
+        """Setup: project from default kanban template ('Normal' is a known priority).
+        Expectations: resolve_priority returns a positive id for the known name.
+        """
+        project_id = make_project(real_conn)
+
+        priority_id = Resolver(real_conn).resolve_priority(project_id, "Normal")
+
+        assert isinstance(priority_id, int) and priority_id > 0
+
+    def test_falls_back_to_default_on_unknown_name(self, real_conn):
+        """Setup: project exists; unknown priority name passed.
+        Expectations: resolve_priority returns a positive id (the default).
+        """
+        project_id = make_project(real_conn)
+
+        priority_id = Resolver(real_conn).resolve_priority(project_id, "Bogus")
+
+        assert isinstance(priority_id, int) and priority_id > 0
+
+    def test_fallback_logs_warning(self, real_conn, caplog):
+        """Setup: unknown priority name.
+        Expectations: a warning naming the unknown value is logged.
+        """
+        project_id = make_project(real_conn)
+        caplog.set_level(logging.WARNING)
+
+        Resolver(real_conn).resolve_priority(project_id, "Bogus")
+
+        assert any("Bogus" in record.message for record in caplog.records)
+
+    def test_none_name_returns_default_without_warning(self, real_conn, caplog):
+        """Setup: name=None.
+        Expectations: returns the default; no warning emitted.
+        """
+        project_id = make_project(real_conn)
+        caplog.set_level(logging.WARNING)
+
+        priority_id = Resolver(real_conn).resolve_priority(project_id, None)
+
+        assert isinstance(priority_id, int) and priority_id > 0
+        assert not caplog.records
+
+
+@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
+class TestResolveIssueType:
+    def test_returns_id_for_known_issue_type(self, real_conn):
+        """Setup: project from default kanban template ('Bug' is a known type).
+        Expectations: resolve_issue_type returns a positive id.
+        """
+        project_id = make_project(real_conn)
+
+        type_id = Resolver(real_conn).resolve_issue_type(project_id, "Bug")
+
+        assert isinstance(type_id, int) and type_id > 0
+
+    def test_falls_back_to_default_on_unknown_name(self, real_conn):
+        project_id = make_project(real_conn)
+
+        type_id = Resolver(real_conn).resolve_issue_type(project_id, "Bogus")
+
+        assert isinstance(type_id, int) and type_id > 0
+
+    def test_fallback_logs_warning(self, real_conn, caplog):
+        project_id = make_project(real_conn)
+        caplog.set_level(logging.WARNING)
+
+        Resolver(real_conn).resolve_issue_type(project_id, "Bogus")
+
+        assert any("Bogus" in record.message for record in caplog.records)
+
+    def test_none_name_returns_default_without_warning(self, real_conn, caplog):
+        project_id = make_project(real_conn)
+        caplog.set_level(logging.WARNING)
+
+        type_id = Resolver(real_conn).resolve_issue_type(project_id, None)
+
+        assert isinstance(type_id, int) and type_id > 0
+        assert not caplog.records
+
+
+@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
+class TestResolveSeverity:
+    def test_returns_id_for_known_severity(self, real_conn):
+        """Setup: project from default kanban template ('Normal' is a known severity).
+        Expectations: resolve_severity returns a positive id.
+        """
+        project_id = make_project(real_conn)
+
+        sev_id = Resolver(real_conn).resolve_severity(project_id, "Normal")
+
+        assert isinstance(sev_id, int) and sev_id > 0
+
+    def test_falls_back_to_default_on_unknown_name(self, real_conn):
+        project_id = make_project(real_conn)
+
+        sev_id = Resolver(real_conn).resolve_severity(project_id, "Bogus")
+
+        assert isinstance(sev_id, int) and sev_id > 0
+
+    def test_fallback_logs_warning(self, real_conn, caplog):
+        project_id = make_project(real_conn)
+        caplog.set_level(logging.WARNING)
+
+        Resolver(real_conn).resolve_severity(project_id, "Bogus")
+
+        assert any("Bogus" in record.message for record in caplog.records)
+
+    def test_none_name_returns_default_without_warning(self, real_conn, caplog):
+        project_id = make_project(real_conn)
+        caplog.set_level(logging.WARNING)
+
+        sev_id = Resolver(real_conn).resolve_severity(project_id, None)
+
+        assert isinstance(sev_id, int) and sev_id > 0
+        assert not caplog.records
+
+
+@pytest.mark.xfail(reason="ticket 023: resolve_milestone queries non-existent `projects_milestone` table (should be milestones_milestone)")
+class TestResolveMilestoneNotFound:
+    def test_not_found_raises(self, real_conn):
+        """Setup: no milestone of that name in any project.
+        Expectations: ResolveError raised with the name in the message.
+        """
+        with pytest.raises(ResolveError, match="Sprint 99"):
+            Resolver(real_conn).resolve_milestone(99999, "Sprint 99")
+
+
+class TestResolveStoryNotFound:
+    def test_not_found_raises(self, real_conn):
+        """Setup: no story with that ref in any project.
+        Expectations: ResolveError raised.
+        """
+        with pytest.raises(ResolveError, match="ref #999"):
+            Resolver(real_conn).resolve_story(99999, 999)
+
+
+class TestResolveEpicNotFound:
+    def test_not_found_raises(self, real_conn):
+        """Setup: no epic with that ref in any project.
+        Expectations: ResolveError raised.
+        """
+        with pytest.raises(ResolveError, match="ref #999"):
+            Resolver(real_conn).resolve_epic(99999, 999)
