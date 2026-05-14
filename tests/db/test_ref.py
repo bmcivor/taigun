@@ -6,7 +6,6 @@ from taigun.resolver import Resolver
 from factories import make_project
 
 
-@pytest.mark.xfail(reason="ticket 023: references_reference INSERT missing required column(s)")
 class TestRefAllocator:
     def test_returns_positive_ref(self, real_conn):
         """Setup: project exists (sequence created by ProjectCreator).

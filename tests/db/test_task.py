@@ -5,10 +5,9 @@ from taigun.db.task import TaskWriter
 from taigun.models import Story, Task
 from taigun.resolver import Resolver
 
-from factories import make_project
+from factories import make_milestone, make_project
 
 
-@pytest.mark.xfail(reason="ticket 023: writer SQL bugs not yet fixed")
 class TestTaskWriter:
     def test_returns_positive_ref(self, real_conn):
         """Setup: project exists; task has only required fields.
@@ -65,10 +64,11 @@ class TestTaskWriter:
         assert project_id > 0
 
     def test_with_milestone_succeeds(self, real_conn):
-        """Setup: task with milestone set to a known kanban milestone name.
+        """Setup: project + one milestone named 'Sprint 1'.
         Expectations: writer.write returns a ref without raising.
         """
-        make_project(real_conn)
+        project_id = make_project(real_conn)
+        make_milestone(real_conn, project_id, "Sprint 1")
         writer = TaskWriter(real_conn, Resolver(real_conn))
 
         ref = writer.write(

@@ -57,3 +57,57 @@ def real_conn():
     finally:
         conn.rollback()
         conn.close()
+
+
+@pytest.fixture
+def cli_conn(real_conn, monkeypatch):
+    """Route the CLI's psycopg2.connect() calls to real_conn so CLI tests
+    share state with the test's open transaction (no commit needed).
+
+    Each CLI invocation gets its own SAVEPOINT on real_conn:
+      - CLI commit()   -> RELEASE SAVEPOINT   (kept inside real_conn's txn)
+      - CLI rollback() -> ROLLBACK TO SAVEPOINT  (error path still works)
+      - CLI close()    -> no-op   (the fixture owns the connection)
+
+    real_conn's teardown rollback wipes everything at the end of the test,
+    so no per-test cleanup is needed.
+    """
+    counter = {"n": 0}
+
+    class SharedConnWrapper:
+        def __init__(self, conn):
+            self._conn = conn
+            self._sp = None
+
+        def _begin(self):
+            self._sp = f"cli_sp_{counter['n']}"
+            counter["n"] += 1
+            with self._conn.cursor() as cur:
+                cur.execute(f"SAVEPOINT {self._sp}")
+
+        def commit(self):
+            if self._sp:
+                with self._conn.cursor() as cur:
+                    cur.execute(f"RELEASE SAVEPOINT {self._sp}")
+                self._sp = None
+
+        def rollback(self):
+            if self._sp:
+                with self._conn.cursor() as cur:
+                    cur.execute(f"ROLLBACK TO SAVEPOINT {self._sp}")
+                self._sp = None
+
+        def close(self):
+            pass
+
+        def __getattr__(self, name):
+            return getattr(self._conn, name)
+
+    def fake_connect(*args, **kwargs):
+        wrapper = SharedConnWrapper(real_conn)
+        wrapper._begin()
+        return wrapper
+
+    monkeypatch.setattr("taigun.db.connection.psycopg2.connect", fake_connect)
+
+    yield real_conn

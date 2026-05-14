@@ -13,6 +13,13 @@ STATUS_TABLES = {
     "epic": "projects_epicstatus",
 }
 
+DEFAULT_STATUS_COLUMNS = {
+    "story": "default_us_status_id",
+    "task": "default_task_status_id",
+    "issue": "default_issue_status_id",
+    "epic": "default_epic_status_id",
+}
+
 
 class Resolver:
     """Resolves human-readable references to FK IDs for use in DB writes.
@@ -81,18 +88,18 @@ class Resolver:
         Raises:
             ResolveError: If ticket_type is invalid or no default status is found.
         """
-        table = STATUS_TABLES.get(ticket_type)
-        if table is None:
+        column = DEFAULT_STATUS_COLUMNS.get(ticket_type)
+        if column is None:
             raise ResolveError(f"Unknown ticket type '{ticket_type}'")
 
         with self._conn.cursor() as cur:
             cur.execute(
-                f"SELECT id FROM {table} WHERE project_id = %s AND is_default = true",
+                f"SELECT {column} FROM projects_project WHERE id = %s",
                 (project_id,),
             )
             row = cur.fetchone()
 
-        if row is None:
+        if row is None or row[0] is None:
             raise ResolveError(f"No default status found for project {project_id}")
 
         return row[0]
@@ -331,7 +338,7 @@ class Resolver:
         """
         with self._conn.cursor() as cur:
             cur.execute(
-                "SELECT id FROM projects_milestone"
+                "SELECT id FROM milestones_milestone"
                 " WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
                 (project_id, name),
             )

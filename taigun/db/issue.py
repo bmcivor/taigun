@@ -45,8 +45,10 @@ class IssueWriter(BaseWriter):
                 "INSERT INTO issues_issue"
                 " (subject, description, project_id, status_id, priority_id, type_id,"
                 "  severity_id, owner_id, assigned_to_id, milestone_id, ref,"
-                "  created_date, modified_date, version)"
-                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1)"
+                "  created_date, modified_date, version,"
+                "  is_blocked, blocked_note, due_date_reason)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1,"
+                "         false, '', '')"
                 " RETURNING id",
                 (
                     issue.subject,

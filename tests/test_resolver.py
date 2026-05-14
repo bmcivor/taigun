@@ -73,7 +73,6 @@ class TestResolveProjectNotFound:
             Resolver(real_conn).resolve_project("nonexistent")
 
 
-@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
 class TestResolveProject:
     def test_returns_project_id(self, real_conn):
         """Setup: project with slug 'test-project' created via make_project.
@@ -84,7 +83,6 @@ class TestResolveProject:
         assert Resolver(real_conn).resolve_project("test-project") == expected_id
 
 
-@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
 class TestResolveStatus:
     def test_returns_status_id_for_known_kanban_name(self, real_conn):
         """Setup: project from default kanban template ('New' is a known story status).
@@ -126,7 +124,6 @@ class TestResolveStatus:
         assert isinstance(status_id, int) and status_id > 0
 
 
-@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
 class TestResolveDefaultStatus:
     def test_returns_positive_id(self, real_conn):
         """Setup: project with default story status set.
@@ -159,7 +156,6 @@ class TestResolveDefaultStatus:
         assert isinstance(status_id, int) and status_id > 0
 
 
-@pytest.mark.xfail(reason="ticket 023: resolve_default_status queries non-existent `is_default` column")
 class TestResolveDefaultStatusForNonexistentProject:
     def test_raises_resolve_error(self, real_conn):
         """Setup: a project ID that does not exist.
@@ -169,7 +165,6 @@ class TestResolveDefaultStatusForNonexistentProject:
             Resolver(real_conn).resolve_default_status(99999, "story")
 
 
-@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
 class TestResolvePriority:
     def test_returns_id_for_known_priority_name(self, real_conn):
         """Setup: project from default kanban template ('Normal' is a known priority).
@@ -215,7 +210,6 @@ class TestResolvePriority:
         assert not caplog.records
 
 
-@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
 class TestResolveIssueType:
     def test_returns_id_for_known_issue_type(self, real_conn):
         """Setup: project from default kanban template ('Bug' is a known type).
@@ -252,7 +246,6 @@ class TestResolveIssueType:
         assert not caplog.records
 
 
-@pytest.mark.xfail(reason="ticket 023: project setup depends on ProjectCreator SQL")
 class TestResolveSeverity:
     def test_returns_id_for_known_severity(self, real_conn):
         """Setup: project from default kanban template ('Normal' is a known severity).
@@ -289,7 +282,6 @@ class TestResolveSeverity:
         assert not caplog.records
 
 
-@pytest.mark.xfail(reason="ticket 023: resolve_milestone queries non-existent `projects_milestone` table (should be milestones_milestone)")
 class TestResolveMilestoneNotFound:
     def test_not_found_raises(self, real_conn):
         """Setup: no milestone of that name in any project.

@@ -5,10 +5,9 @@ from taigun.db.story import StoryWriter
 from taigun.models import Epic, Story
 from taigun.resolver import Resolver
 
-from factories import make_project
+from factories import make_milestone, make_project
 
 
-@pytest.mark.xfail(reason="ticket 023: writer SQL bugs not yet fixed")
 class TestStoryWriter:
     def test_returns_positive_ref(self, real_conn):
         """Setup: project exists; story has only required fields.
@@ -61,14 +60,11 @@ class TestStoryWriter:
         assert ref > 0
 
     def test_with_milestone_succeeds(self, real_conn):
-        """Setup: story with milestone set to a known kanban milestone name.
+        """Setup: project + one milestone named 'Sprint 1'.
         Expectations: writer.write returns a ref without raising.
-
-        (Milestones from the default kanban template — if none exist on the
-        materialised project, this exercises the resolver-not-found path and
-        documents that gap; for now it's part of the xfail bug class.)
         """
-        make_project(real_conn)
+        project_id = make_project(real_conn)
+        make_milestone(real_conn, project_id, "Sprint 1")
         writer = StoryWriter(real_conn, Resolver(real_conn))
 
         ref = writer.write(
