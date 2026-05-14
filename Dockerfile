@@ -11,6 +11,8 @@ COPY pyproject.toml uv.lock README.md LICENSE ./
 
 FROM base AS test
 
+RUN uv sync --frozen --group dev --no-install-project
+
 COPY taigun/ ./taigun/
 COPY tests/ ./tests/
 
