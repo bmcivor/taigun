@@ -1,4 +1,4 @@
-## 23. Fix bugs to green
+## ~~23. Fix bugs to green~~ (Done)
 
 **Epic:** E7 — Integration testing & correctness
 

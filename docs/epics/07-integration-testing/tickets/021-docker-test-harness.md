@@ -1,4 +1,4 @@
-## 21. Docker test harness
+## ~~21. Docker test harness~~ (Done)
 
 **Epic:** E7 — Integration testing & correctness
 

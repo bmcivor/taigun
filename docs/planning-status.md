@@ -1,6 +1,6 @@
 # Planning status
 
-Last updated: 2026-05-03
+Last updated: 2026-05-14
 
 ## What's done
 
@@ -45,6 +45,24 @@ Last updated: 2026-05-03
   docker-compose, `scripts/release.sh` wrapper that passes host git identity into the container
 - `UV_PROJECT_ENVIRONMENT=/opt/venv` in Dockerfile base stage so the image's venv lives
   outside the volume mount (fixes root-owned `.venv` on host after docker runs)
+- 021 complete: docker test harness — `test-db` + `test-db-init` (Taiga migrations
+  + initial templates + admin user) services in `docker-compose.yaml`; `scripts/test.sh`
+  orchestrates suite-level setup and teardown
+- 022 complete: test suite refactored to real DB — `real_conn` fixture rolls back per
+  test; `tests/factories.py` for test data setup via app code; CLI tests moved to
+  `tests/cli/`; no raw SQL in test logic
+- 023 complete: writer SQL bugs fixed — missing NOT NULL columns (`is_blocked`,
+  `blocked_note`, `is_closed`, `client_requirement`, `team_requirement`,
+  `due_date_reason`, `is_iocaine`) added to story/task/issue/epic INSERTs; bogus
+  `priority_id` removed from story writer; `epics_relateduserstory.order` added;
+  `cli_conn` fixture in `tests/conftest.py` routes CLI's psycopg2.connect to the test's
+  open connection via SAVEPOINT so CLI tests share state with the test transaction; all
+  xfails removed; 180 tests passing
+- 024 complete: Jenkinsfile runs `./scripts/test.sh` (same invocation as local); test
+  service's volume mount dropped so the test image is self-contained in CI; Dockerfile
+  `test` stage restructured to install deps before copying code (cached layer); compose
+  plugin installation added to Jenkins image in vertex-studio (separate change)
+- E7 complete
 
 ## What's next
 
