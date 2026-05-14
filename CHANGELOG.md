@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v0.2.0 (2026-05-14)
+
+### Bug Fixes
+
+- **022**: Add in basic docker harness to use real db connections
+  ([`cc0d009`](https://github.com/bmcivor/taigun/commit/cc0d009d4f9fe9d13eca53c6babf471f34ac79c4))
+
+- **022**: Remove insane mocking and use real infrastructure for testing
+  ([`087bffa`](https://github.com/bmcivor/taigun/commit/087bffac153bcb4107ad942ac6ab163d34b0cec3))
+
+- **022**: Update test coverage
+  ([`b1e38ef`](https://github.com/bmcivor/taigun/commit/b1e38ef0ef185719c6f6de4de43c0b54d156c683))
+
+### Chores
+
+- **022**: Refactory tests structure for cli
+  ([`ab0b8ca`](https://github.com/bmcivor/taigun/commit/ab0b8ca769b9ad5cffdfd564aa275ae86da4e1fb))
+
+### Features
+
+- Add in updated plan to fix the mess of this design
+  ([`bc4c35a`](https://github.com/bmcivor/taigun/commit/bc4c35a307016917d6997a9eb8016ba1aa3115c6))
+
+- Update ticket statuses
+  ([`bddbe55`](https://github.com/bmcivor/taigun/commit/bddbe554e6f235e6d951a729fccc4d197f292aac))
+
+- **020**: Add in project cli command opt
+  ([`5ec88e7`](https://github.com/bmcivor/taigun/commit/5ec88e7e64147cad39eef08ca918966279994a4b))
+
+- **021**: Add in basic real taiga test hardness back and db
+  ([`82d1f30`](https://github.com/bmcivor/taigun/commit/82d1f300c9b41a58afbeeb32f0d23484aaea159d))
+
+- **023**: Address xfails tests after moving to real test harness
+  ([`43bc1e1`](https://github.com/bmcivor/taigun/commit/43bc1e147024bebc10230bf4cd713483dcc30efa))
+
+- **024**: Setup jenkins pipeline to actually run properly
+  ([`4bcb024`](https://github.com/bmcivor/taigun/commit/4bcb02497e944557ff522079de8d0148b4384091))
+
+
 ## v0.1.0 (2026-05-02)
 
 ### Bug Fixes
