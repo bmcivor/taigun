@@ -1,6 +1,10 @@
-## ~~13. Task writer~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E4 — DB layer
+## 13. Task writer
 
 **As a** developer
 **I want** db.py to insert tasks with all supported fields

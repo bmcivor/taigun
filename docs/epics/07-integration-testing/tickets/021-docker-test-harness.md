@@ -1,6 +1,10 @@
-## ~~21. Docker test harness~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E7 — Integration testing & correctness
+## 21. Docker test harness
 
 **As a** developer
 **I want** a Docker-based test database with a real Taiga schema and baseline data

@@ -1,6 +1,10 @@
-## ~~7. Body section parser~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E3 — Markdown parser
+## 7. Body section parser
 
 **As a** developer
 **I want** the markdown body parsed into subject and description fields

@@ -1,6 +1,10 @@
-## ~~12. Issue writer~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E4 — DB layer
+## 12. Issue writer
 
 **As a** developer
 **I want** db.py to insert issues with all supported fields

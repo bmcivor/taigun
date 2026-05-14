@@ -1,6 +1,10 @@
-## ~~9. Resolver~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E4 — DB layer
+## 9. Resolver
 
 **As a** developer
 **I want** resolver.py to look up FK IDs for all referenced entities

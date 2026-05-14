@@ -1,6 +1,10 @@
-## ~~16. push command~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E5 — CLI
+## 16. push command
 
 **As a** user
 **I want** `taigun push` to parse and insert one or more ticket files

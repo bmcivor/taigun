@@ -1,6 +1,10 @@
-## ~~1. Expose Postgres over Tailscale and pin Taiga version in vertex-studio~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E1 — Infrastructure & connectivity
+## 1. Expose Postgres over Tailscale and pin Taiga version in vertex-studio
 
 **As a** taigun developer
 **I want** Taiga's Postgres port accessible over Tailscale and the Taiga version pinned
