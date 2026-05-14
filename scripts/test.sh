@@ -9,7 +9,7 @@ trap cleanup EXIT
 cleanup
 
 if [[ $# -gt 0 ]]; then
-    docker compose run --rm test uv run pytest "$@"
+    docker compose run --rm --build test uv run pytest "$@"
 else
-    docker compose run --rm test
+    docker compose run --rm --build test
 fi
