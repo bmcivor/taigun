@@ -1,4 +1,4 @@
-## 22. Refactor tests to real DB with fixture utilities
+## ~~22. Refactor tests to real DB with fixture utilities~~ (Done)
 
 **Epic:** E7 — Integration testing & correctness
 

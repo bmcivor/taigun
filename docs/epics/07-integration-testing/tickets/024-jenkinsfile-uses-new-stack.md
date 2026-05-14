@@ -1,4 +1,4 @@
-## 24. Jenkinsfile uses new test stack
+## ~~24. Jenkinsfile uses new test stack~~ (Done)
 
 **Epic:** E7 — Integration testing & correctness
 
