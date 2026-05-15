@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.0.0 (2026-05-15)
+
+### Bug Fixes
+
+- Minor updates to finalize successful taigun runs
+  ([`984eb04`](https://github.com/bmcivor/taigun/commit/984eb042854f90606b45c44cb86c9e3e8c4fade7))
+
+### Features
+
+- First attempt at rewriting ticket structure
+  ([`aa37a8f`](https://github.com/bmcivor/taigun/commit/aa37a8f135b71ed70594c783806ab9aa3cdcf1fe))
+
+
 ## v0.2.0 (2026-05-14)
 
 ### Bug Fixes

@@ -66,9 +66,12 @@ Last updated: 2026-05-14
 
 ## What's next
 
-- Use it in anger: populate vertex-play tickets to the lab Taiga instance (covers 019)
-- 0.1.0 cut once the run-through is clean
-- 1.0.0 once it's been demonstrably stable
+- v1.0 release (dog-fooding against taigun's own tickets and vertex-play's tickets is complete)
+- E8 (v1.0 hardening, tickets 025–029) — patch-release work covering the known gaps:
+  real-Taiga dog-food for tasks/issues/tags/parent-link/epic-link (025), replacing the
+  `cli_conn` monkeypatch with constructor injection (026), separate compose service for
+  CLI invocations (027), `MilestoneWriter` (028), and a CI smoke test against a running
+  Taiga API server (029)
 
 ## Key decisions
 
