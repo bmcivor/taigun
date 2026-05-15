@@ -44,10 +44,10 @@ class StoryWriter(BaseWriter):
                 " (subject, description, project_id, status_id, owner_id,"
                 "  assigned_to_id, milestone_id, ref, created_date, modified_date, version,"
                 "  backlog_order, sprint_order, kanban_order,"
-                "  is_blocked, blocked_note, is_closed,"
+                "  is_blocked, blocked_note, is_closed, tags,"
                 "  client_requirement, team_requirement, due_date_reason)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1, %s, %s, %s,"
-                "         false, '', false, false, false, '')"
+                "         false, '', false, %s, false, false, '')"
                 " RETURNING id",
                 (
                     story.subject,
@@ -62,6 +62,7 @@ class StoryWriter(BaseWriter):
                     order,
                     order,
                     order,
+                    story.tags or [],
                 ),
             )
             object_id = cur.fetchone()[0]

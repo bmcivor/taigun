@@ -46,9 +46,9 @@ class IssueWriter(BaseWriter):
                 " (subject, description, project_id, status_id, priority_id, type_id,"
                 "  severity_id, owner_id, assigned_to_id, milestone_id, ref,"
                 "  created_date, modified_date, version,"
-                "  is_blocked, blocked_note, due_date_reason)"
+                "  is_blocked, blocked_note, tags, due_date_reason)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1,"
-                "         false, '', '')"
+                "         false, '', %s, '')"
                 " RETURNING id",
                 (
                     issue.subject,
@@ -63,6 +63,7 @@ class IssueWriter(BaseWriter):
                     milestone_id,
                     now,
                     now,
+                    issue.tags or [],
                 ),
             )
             object_id = cur.fetchone()[0]

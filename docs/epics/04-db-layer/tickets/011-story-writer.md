@@ -1,6 +1,10 @@
-## ~~11. User story writer~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E4 — DB layer
+## 11. User story writer
 
 **As a** developer
 **I want** db.py to insert user stories with all supported fields

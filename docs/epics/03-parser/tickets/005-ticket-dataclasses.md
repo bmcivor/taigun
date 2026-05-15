@@ -1,6 +1,10 @@
-## ~~5. Ticket dataclasses~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E3 — Markdown parser
+## 5. Ticket dataclasses
 
 **As a** developer
 **I want** typed dataclasses for Story, Issue, Task, and Epic

@@ -1,6 +1,10 @@
-## ~~14. Epic writer~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E4 — DB layer
+## 14. Epic writer
 
 **As a** developer
 **I want** db.py to insert epics with all supported fields

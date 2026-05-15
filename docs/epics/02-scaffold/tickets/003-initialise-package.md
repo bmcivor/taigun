@@ -1,6 +1,10 @@
-## ~~3. Initialise Python package~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E2 — Project scaffold
+## 3. Initialise Python package
 
 **As a** developer
 **I want** the project scaffolded with pyproject.toml and the taigun package structure

@@ -1,10 +1,23 @@
-## 20. projects create command
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E5 — CLI
+## 20. projects create command
 
 **As a** user
 **I want** `taigun projects create <name> <slug>` to create a new Taiga project from the command line
 **So that** I can bootstrap a project without going into the Taiga UI before pushing tickets
+
+### Context
+
+Taiga's Django app normally handles all of this initialisation via signals on project
+creation. Because taigun bypasses signals, project creation must replicate the setup
+explicitly so that subsequent ticket pushes against the new project work end-to-end.
+
+This is the unblocker for using taigun against a fresh Taiga instance without first
+having to go into the Taiga UI to create the project.
 
 ### Acceptance criteria
 
@@ -16,15 +29,6 @@
 - Returns the new project ID and slug on success
 - `--profile <name>` flag supported
 - Project slug already exists → clear error, no partial state left in the DB
-
-### Context
-
-Taiga's Django app normally handles all of this initialisation via signals on project
-creation. Because taigun bypasses signals, project creation must replicate the setup
-explicitly so that subsequent ticket pushes against the new project work end-to-end.
-
-This is the unblocker for using taigun against a fresh Taiga instance without first
-having to go into the Taiga UI to create the project.
 
 ### Dependencies
 

@@ -45,9 +45,9 @@ class EpicWriter(BaseWriter):
                 "INSERT INTO epics_epic"
                 " (subject, description, project_id, status_id, owner_id,"
                 "  color, assigned_to_id, ref, created_date, modified_date, version, epics_order,"
-                "  is_blocked, blocked_note, client_requirement, team_requirement)"
+                "  is_blocked, blocked_note, tags, client_requirement, team_requirement)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1, %s,"
-                "         false, '', false, false)"
+                "         false, '', %s, false, false)"
                 " RETURNING id",
                 (
                     epic.subject,
@@ -60,6 +60,7 @@ class EpicWriter(BaseWriter):
                     now,
                     now,
                     order,
+                    epic.tags or [],
                 ),
             )
             object_id = cur.fetchone()[0]

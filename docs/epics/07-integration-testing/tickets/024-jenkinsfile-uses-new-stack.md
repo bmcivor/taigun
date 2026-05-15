@@ -1,6 +1,10 @@
-## ~~24. Jenkinsfile uses new test stack~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E7 — Integration testing & correctness
+## 24. Jenkinsfile uses new test stack
 
 **As a** developer
 **I want** Jenkins on the lab box to run the same docker-compose stack as local dev

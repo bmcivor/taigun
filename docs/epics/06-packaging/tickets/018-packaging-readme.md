@@ -1,6 +1,10 @@
-## ~~18. Packaging and README~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E6 — Packaging & release
+## 18. Packaging and README
 
 **As a** open source user
 **I want** taigun installable via pip and documented in a README

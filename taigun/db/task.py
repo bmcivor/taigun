@@ -48,9 +48,9 @@ class TaskWriter(BaseWriter):
                 " (subject, description, project_id, status_id, owner_id,"
                 "  user_story_id, assigned_to_id, milestone_id, ref,"
                 "  created_date, modified_date, version, us_order, taskboard_order,"
-                "  is_blocked, blocked_note, is_iocaine, due_date_reason)"
+                "  is_blocked, blocked_note, is_iocaine, tags, due_date_reason)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1, %s, %s,"
-                "         false, '', false, '')"
+                "         false, '', false, %s, '')"
                 " RETURNING id",
                 (
                     task.subject,
@@ -65,6 +65,7 @@ class TaskWriter(BaseWriter):
                     now,
                     order,
                     order,
+                    task.tags or [],
                 ),
             )
             object_id = cur.fetchone()[0]

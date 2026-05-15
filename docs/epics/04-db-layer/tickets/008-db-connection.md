@@ -1,6 +1,10 @@
-## ~~8. DB connection management~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E4 — DB layer
+## 8. DB connection management
 
 **As a** developer
 **I want** a db.py module that opens and manages a Postgres connection from config

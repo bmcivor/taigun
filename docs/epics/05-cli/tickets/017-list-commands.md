@@ -1,6 +1,10 @@
-## ~~17. list commands~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E5 — CLI
+## 17. list commands
 
 **As a** user
 **I want** `taigun projects list`, `taigun epics list`, and `taigun statuses list`

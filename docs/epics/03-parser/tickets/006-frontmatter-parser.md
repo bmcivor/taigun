@@ -1,6 +1,10 @@
-## ~~6. Frontmatter parser~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E3 — Markdown parser
+## 6. Frontmatter parser
 
 **As a** developer
 **I want** the YAML frontmatter block parsed into a partial ticket model

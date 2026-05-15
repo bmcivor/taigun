@@ -1,6 +1,10 @@
-## ~~22. Refactor tests to real DB with fixture utilities~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E7 — Integration testing & correctness
+## 22. Refactor tests to real DB with fixture utilities
 
 **As a** developer
 **I want** every DB-related test to run against `test-db` using real connections and

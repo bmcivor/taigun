@@ -1,6 +1,9 @@
-## 19. End-to-end test against vertex-studio Taiga
+---
+type: story
+project: taigun
+---
 
-**Epic:** E6 — Packaging & release
+## 19. End-to-end test against vertex-studio Taiga
 
 **As a** developer
 **I want** to push one of each ticket type to the vertex-studio Taiga instance

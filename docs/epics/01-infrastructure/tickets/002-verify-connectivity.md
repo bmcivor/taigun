@@ -1,6 +1,10 @@
-## ~~2. Verify DB connectivity from dev machine~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E1 — Infrastructure & connectivity
+## 2. Verify DB connectivity from dev machine
 
 **As a** taigun developer
 **I want** to confirm direct Postgres access works from my dev machine over Tailscale
@@ -19,7 +23,7 @@
 
 ### Blocks
 
-- 008 (DB connection module)
+- 008
 
 ### Priority
 

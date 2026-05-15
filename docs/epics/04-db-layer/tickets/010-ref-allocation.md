@@ -1,6 +1,10 @@
-## ~~10. Ref allocation~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E4 — DB layer
+## 10. Ref allocation
 
 **As a** developer
 **I want** ref allocation handled as a shared utility in db.py

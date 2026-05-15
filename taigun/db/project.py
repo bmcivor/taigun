@@ -42,6 +42,7 @@ class ProjectCreator:
         project_id = self._insert_project(name, slug, owner_id, template["id"])
         self._materialise_statuses(project_id, template)
         self._materialise_lookups(project_id, template)
+        self._materialise_points(project_id, template)
         self._set_project_defaults(project_id, template)
         self._create_ref_sequence(project_id)
         self._insert_owner_membership(project_id, owner_id, template)
@@ -58,7 +59,7 @@ class ProjectCreator:
         with self._conn.cursor() as cur:
             cur.execute(
                 "SELECT id, us_statuses, task_statuses, issue_statuses, epic_statuses,"
-                " priorities, severities, issue_types, roles, default_options"
+                " priorities, severities, issue_types, roles, default_options, points"
                 " FROM projects_projecttemplate"
                 " ORDER BY id LIMIT 1"
             )
@@ -78,6 +79,7 @@ class ProjectCreator:
             "issue_types": _as_list(row[7]),
             "roles": _as_list(row[8]),
             "default_options": _as_dict(row[9]),
+            "points": _as_list(row[10]),
         }
 
     def _insert_project(self, name: str, slug: str, owner_id: int, template_id: int) -> int:
@@ -92,19 +94,21 @@ class ProjectCreator:
                 "  is_private, is_featured, is_looking_for_people,"
                 "  looking_for_people_note,"
                 "  anon_permissions, public_permissions,"
+                "  tags, tags_colors,"
                 "  total_fans, total_fans_last_week, total_fans_last_month,"
                 "  total_fans_last_year,"
                 "  total_activity, total_activity_last_week,"
                 "  total_activity_last_month, total_activity_last_year)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, %s,"
                 "         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
-                "         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                "         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 " RETURNING id",
                 (
                     name, slug, "", owner_id, template_id,
                     now, now, now,
-                    False, False, False, False, False, False,
+                    False, True, True, True, True, True,
                     False, False, False, "",
+                    [], [],
                     [], [],
                     0, 0, 0, 0,
                     0, 0, 0, 0,
@@ -167,6 +171,21 @@ class ProjectCreator:
                 ),
             )
 
+    def _materialise_points(self, project_id: int, template: dict) -> None:
+        for entry in template["points"]:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO projects_points"
+                    " (project_id, name, \"order\", value)"
+                    " VALUES (%s, %s, %s, %s)",
+                    (
+                        project_id,
+                        entry["name"],
+                        entry.get("order", 1),
+                        entry.get("value"),
+                    ),
+                )
+
     def _set_project_defaults(self, project_id: int, template: dict) -> None:
         defaults = template["default_options"]
         mapping = (
@@ -177,6 +196,7 @@ class ProjectCreator:
             ("default_priority_id", "projects_priority", defaults.get("priority")),
             ("default_severity_id", "projects_severity", defaults.get("severity")),
             ("default_issue_type_id", "projects_issuetype", defaults.get("issue_type")),
+            ("default_points_id", "projects_points", defaults.get("points")),
         )
         for column, table, name in mapping:
             if name is None:

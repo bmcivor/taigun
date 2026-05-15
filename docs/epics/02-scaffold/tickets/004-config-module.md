@@ -1,6 +1,10 @@
-## ~~4. Config module~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E2 — Project scaffold
+## 4. Config module
 
 **As a** user
 **I want** taigun to read connection config from `~/.config/taigun/config.toml`

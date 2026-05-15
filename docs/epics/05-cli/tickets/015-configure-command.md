@@ -1,6 +1,10 @@
-## ~~15. configure command~~ (Done)
+---
+type: story
+project: taigun
+status: Done
+---
 
-**Epic:** E5 — CLI
+## 15. configure command
 
 **As a** user
 **I want** `taigun configure` to walk me through setting up a connection profile
