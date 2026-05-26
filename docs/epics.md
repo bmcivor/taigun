@@ -13,7 +13,8 @@ Index of all epics and their ordering.
 | E5 | CLI | 015–017 |
 | E6 | Packaging & release | 018–019 |
 | E7 | Integration testing & correctness | 021–024 |
-| E8 | v1.0 hardening | 025–029 |
+| E8 | v1.0 hardening | 025–031 |
+| E9 | Update workflow | 032–034 |
 
 ## Ordering
 
