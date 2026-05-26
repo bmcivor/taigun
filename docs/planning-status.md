@@ -67,11 +67,15 @@ Last updated: 2026-05-14
 ## What's next
 
 - v1.0 release (dog-fooding against taigun's own tickets and vertex-play's tickets is complete)
-- E8 (v1.0 hardening, tickets 025–029) — patch-release work covering the known gaps:
+- E8 (v1.0 hardening, tickets 025–031) — patch-release work covering the known gaps:
   real-Taiga dog-food for tasks/issues/tags/parent-link/epic-link (025), replacing the
   `cli_conn` monkeypatch with constructor injection (026), separate compose service for
-  CLI invocations (027), `MilestoneWriter` (028), and a CI smoke test against a running
-  Taiga API server (029)
+  CLI invocations (027), `MilestoneWriter` (028), CI smoke test against a running Taiga
+  API server (029), and audit + fix of data-loss bugs on push (030, 031)
+- E9 (update workflow, tickets 032–034) — close the design omission that taigun is
+  push-only. ADR for identification + mutability semantics (032), `taigun_ref` round-trip
+  so the markdown carries the Taiga ref after first push (033), and the actual update /
+  upsert implementation (034)
 
 ## Key decisions
 
