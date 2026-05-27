@@ -3,34 +3,40 @@ type: story
 project: taigun
 ---
 
-## 33. Round-trip taigun_ref in frontmatter
+## 33. Sidecar state file for source-to-ref mapping
 
 **As a** taigun user
-**I want** push to write the assigned Taiga ref back into my source markdown
-**So that** my markdown becomes the link between source and Taiga ticket, with no manual bookkeeping
+**I want** push to maintain a sidecar file that maps source markdown files to their Taiga refs
+**So that** subsequent pushes can find existing tickets and update them, without taigun ever touching the source files
 
 ### Context
 
-Assumes the ADR (032) lands on `taigun_ref` as the identification mechanism. After push:
+Assumes the ADR (032) lands on a sidecar file for identification. The sidecar lives in the repo (committed alongside the source) and contains the path → ref mapping that push uses to decide insert vs update.
 
-```yaml
----
-type: story
-project: vertex-play
-taigun_ref: 42        # written back by push
----
+Exact format / location / schema decided in 032. Likely shape:
+
+```toml
+# .taigun-state.toml at repo root
+[[entries]]
+file = "docs/epics/01/tickets/001.md"
+project = "vertex-play"
+ref = 9
+
+[[entries]]
+file = "docs/epics/01/tickets/002.md"
+project = "vertex-play"
+ref = 10
 ```
-
-The frontmatter parser already understands unknown fields can be loaded into the model. This ticket extends it so the field is also writable back to the file after a successful push.
-
-Open question for the ADR: write back always, or behind a flag (`--write-refs`). Behind a flag is safer (push stays read-only by default) but pushes the user to remember to use it. Always-on is more useful but mutates the user's file as a side effect of `push`. Decide in 032.
 
 ### Acceptance criteria
 
-- Frontmatter parser reads `taigun_ref` from input files (already loads unknown fields — verify)
-- Push, on success, writes the new ref back to the source file's frontmatter — exact mechanism per 032
-- The rewrite preserves the rest of the file byte-for-byte (no reordering, no quote-style changes, no whitespace shuffling) — frontmatter libraries often round-trip poorly, may need custom write
-- Unit tests covering: write into a file with no existing `taigun_ref`, overwrite an existing one, leave other frontmatter fields untouched
+- New module (e.g. `taigun/state.py`) reads + writes the sidecar
+- Push reads the sidecar on startup; for each source file in the push, looks up an existing entry
+- After a successful insert, push writes a new entry to the sidecar
+- Source markdown files are never written to by push
+- Sidecar is robust to manual editing (e.g. user reorders or removes entries by hand — should not crash)
+- Missing sidecar on first-ever push is fine (treated as empty)
+- Unit tests covering: read missing file, read corrupted file, write new entry, write second entry without disturbing first
 - All existing tests still pass
 
 ### Dependencies

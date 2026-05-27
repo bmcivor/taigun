@@ -11,7 +11,7 @@ project: taigun
 
 ### Context
 
-Builds on 032 (semantics) and 033 (round-trip). The actual implementation.
+Builds on 032 (semantics) and 033 (sidecar lookup). The actual update implementation for the four ticket types. Projects and milestones are a separate ticket (035) because their field shapes and mutability rules differ enough to warrant their own pass.
 
 Shape of the command depends on what 032 decides. Two reasonable shapes:
 
@@ -36,7 +36,11 @@ Field-mutability rules from 032 drive what gets included in the UPDATE clause.
 ### Dependencies
 
 - 032 (semantics)
-- 033 (refs in frontmatter)
+- 033 (sidecar in place to identify existing tickets)
+
+### Blocks
+
+- 035 (project / milestone updates follow the same pattern, depend on 034 landing first)
 
 ### Priority
 
