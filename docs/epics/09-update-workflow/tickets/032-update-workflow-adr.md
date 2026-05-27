@@ -13,14 +13,16 @@ project: taigun
 
 The interesting decisions are not the SQL — they're the workflow shape. Things to resolve in this ticket, not in implementation:
 
-- **Identification**: how does the second push know it's updating ticket #42 vs creating a new one? Options:
-  - `taigun_ref` frontmatter field, written back by push on first run
-  - `(project, slug-derived-from-title)` natural key
-  - Content-addressed (hash the body — but title edits would orphan)
+- **Identification: use a sidecar file.** `.taigun-state.json` (or similar) at repo root maps source file path → Taiga ref. Push reads it to decide insert vs update; writes it after successful insert. Source files never get touched by taigun, no YAML round-tripping problem, the mapping is explicit and committable. Rejected alternatives:
+  - `taigun_ref` written back into frontmatter — YAML libraries mangle key order / strip comments / change quoting, hostile to git diffs
+  - Query Taiga first by subject or content — no naturally stable key in Taiga's schema (subjects are mutable, hashes change with every edit), would require adding a marker field anyway, which is just a sidecar in a worse place
+- **Sidecar shape**: file format (TOML / JSON / YAML), location (repo root vs `.taigun/`), what's stored beyond the ref (project, push timestamp, content hash for change detection?), whether one sidecar per repo or per project
 - **Mutability**: which fields can change? Title and description obviously. Status? Priority? Milestone? Type? Project itself?
 - **Removal semantics**: if a frontmatter field is present on push 1 but absent on push 2, do we (a) clear that field, (b) leave it as-is, (c) error?
 - **Conflict semantics**: if Taiga has been edited in the UI since the last push, do we (a) overwrite blindly, (b) detect via `modified_date` and refuse, (c) detect and prompt?
+- **Missing-ticket semantics**: if the sidecar points at a ref that no longer exists in Taiga (deleted via UI), do we (a) error, (b) re-insert and update the sidecar, (c) prompt?
 - **Idempotency**: re-pushing an unchanged file should be a no-op, not a 200-row update
+- **Audit trail**: when an update lands, what value goes in Taiga's "modified by" column (whatever Taiga has) — `acting_user` from config seems right but confirm
 
 ### Acceptance criteria
 

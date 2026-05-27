@@ -72,10 +72,10 @@ Last updated: 2026-05-14
   `cli_conn` monkeypatch with constructor injection (026), separate compose service for
   CLI invocations (027), `MilestoneWriter` (028), CI smoke test against a running Taiga
   API server (029), and audit + fix of data-loss bugs on push (030, 031)
-- E9 (update workflow, tickets 032–034) — close the design omission that taigun is
-  push-only. ADR for identification + mutability semantics (032), `taigun_ref` round-trip
-  so the markdown carries the Taiga ref after first push (033), and the actual update /
-  upsert implementation (034)
+- E9 (update workflow, tickets 032–035) — close the design omission that taigun is
+  push-only. ADR for identification (sidecar mapping) + mutability semantics (032),
+  sidecar state file for source-to-ref mapping (033), update implementation for the
+  four ticket types (034), and update extension to projects + milestones (035)
 
 ## Key decisions
 
