@@ -9,6 +9,8 @@ project: taigun
 **I want** every supported ticket type and link relationship pushed to a real Taiga at least once
 **So that** v1.0 isn't trusting "it parses and resolves" as a proxy for "it works in the UI"
 
+**Priority:** High
+
 ### Context
 
 During v1.0 dog-fooding (taigun + vertex-play), only `story` and `epic` ticket types
@@ -38,7 +40,3 @@ to push one of each, into a real Taiga, and look at the UI.
 ### Dependencies
 
 - v1.0 released
-
-### Priority
-
-- High

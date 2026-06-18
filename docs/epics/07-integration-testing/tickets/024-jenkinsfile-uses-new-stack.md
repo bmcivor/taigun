@@ -10,6 +10,8 @@ status: Done
 **I want** Jenkins on the lab box to run the same docker-compose stack as local dev
 **So that** CI behaves identically and there's no Jenkins-specific config to maintain
 
+**Priority:** Medium
+
 ### Acceptance criteria
 
 - `Jenkinsfile` updated to bring up `test-db` + `test-db-init`, run the test suite
@@ -25,7 +27,3 @@ status: Done
 ### Blocks
 
 - None
-
-### Priority
-
-- Medium

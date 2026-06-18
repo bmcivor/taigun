@@ -11,6 +11,8 @@ status: Done
 composable fixtures, with no mocks anywhere
 **So that** a green test suite means the SQL actually works against a real Taiga schema
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - Set of fixture utilities in `tests/db/factories.py` (or similar): functions like
@@ -38,7 +40,3 @@ composable fixtures, with no mocks anywhere
 ### Blocks
 
 - 023
-
-### Priority
-
-- High

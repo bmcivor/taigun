@@ -10,6 +10,8 @@ status: Done
 **I want** taigun to read connection config from `~/.config/taigun/config.toml`
 **So that** I don't have to pass connection details on every command
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `config.py` reads and writes `~/.config/taigun/config.toml`
@@ -27,7 +29,3 @@ status: Done
 ### Blocks
 
 - 008, 015
-
-### Priority
-
-- High

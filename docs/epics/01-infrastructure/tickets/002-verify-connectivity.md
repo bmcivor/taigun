@@ -10,6 +10,8 @@ status: Done
 **I want** to confirm direct Postgres access works from my dev machine over Tailscale
 **So that** the connectivity foundation is confirmed before DB code is written
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `psql` connects from dev machine using the Tailscale IP, port 5432, taiga credentials
@@ -24,7 +26,3 @@ status: Done
 ### Blocks
 
 - 008
-
-### Priority
-
-- High

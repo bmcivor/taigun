@@ -11,6 +11,8 @@ status: Done
 **So that** the writers actually work end-to-end against a real Taiga schema and a
 0.1.1 release can be cut with confidence
 
+**Priority:** High
+
 ### Context
 
 The schema audit predicted at least three failures in v0.1.0 (story `priority_id`,
@@ -32,7 +34,3 @@ is "make them all pass", not enumerate fixes in advance.
 ### Blocks
 
 - (gates a 0.1.1 release)
-
-### Priority
-
-- High

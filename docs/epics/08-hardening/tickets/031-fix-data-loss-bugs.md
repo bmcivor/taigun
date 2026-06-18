@@ -9,6 +9,8 @@ project: taigun
 **I want** every field present in the source markdown to land in Taiga
 **So that** the ticket I see in the UI matches the ticket I wrote, without surprises
 
+**Priority:** High
+
 ### Context
 
 Follow-on to 030. The audit produces a list of fields/sections that don't land; this ticket fixes them. Likely candidates based on early observation:
@@ -34,7 +36,3 @@ Each is its own one-line bug — typically a missing field in a writer's INSERT 
 ### Blocks
 
 - E9 (no point implementing update if push itself is lossy)
-
-### Priority
-
-- High

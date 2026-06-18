@@ -10,6 +10,8 @@ status: Done
 **I want** db.py to insert epics with all supported fields
 **So that** epic tickets pushed via the CLI land correctly in Taiga
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `insert_epic(conn, epic: Epic, resolver)` in `db.py`
@@ -30,7 +32,3 @@ status: Done
 ### Blocks
 
 - 016
-
-### Priority
-
-- High

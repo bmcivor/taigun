@@ -9,6 +9,8 @@ project: taigun
 **I want** the update-workflow design committed as an ADR before any code is written
 **So that** the semantics around ticket identification, mutability, and error handling are decided once and visible, not invented per-PR
 
+**Priority:** High (gates all the update code)
+
 ### Context
 
 The interesting decisions are not the SQL — they're the workflow shape. Things to resolve in this ticket, not in implementation:
@@ -38,7 +40,3 @@ The interesting decisions are not the SQL — they're the workflow shape. Things
 ### Blocks
 
 - 033, 034
-
-### Priority
-
-- High (gates all the update code)

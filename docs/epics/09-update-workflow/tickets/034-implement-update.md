@@ -9,6 +9,8 @@ project: taigun
 **I want** to re-push an edited markdown file and have Taiga reflect the changes
 **So that** docs and tickets stay in sync without manually editing both
 
+**Priority:** Medium
+
 ### Context
 
 Builds on 032 (semantics) and 033 (sidecar lookup). The actual update implementation for the four ticket types. Projects and milestones are a separate ticket (035) because their field shapes and mutability rules differ enough to warrant their own pass.
@@ -41,7 +43,3 @@ Field-mutability rules from 032 drive what gets included in the UPDATE clause.
 ### Blocks
 
 - 035 (project / milestone updates follow the same pattern, depend on 034 landing first)
-
-### Priority
-
-- Medium

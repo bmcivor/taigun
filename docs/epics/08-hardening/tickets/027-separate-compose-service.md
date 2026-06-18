@@ -9,6 +9,8 @@ project: taigun
 **I want** a dedicated docker-compose service for running the taigun CLI against the lab Taiga
 **So that** the `test` image stays focused on running tests, and ad-hoc CLI use doesn't require bind-mounting or baking docs into the test image
 
+**Priority:** Medium
+
 ### Context
 
 Right now, running taigun against the lab Taiga (or `test-db` for dry-runs) reuses the
@@ -43,7 +45,3 @@ that:
 ### Dependencies
 
 - v1.0 released
-
-### Priority
-
-- Medium

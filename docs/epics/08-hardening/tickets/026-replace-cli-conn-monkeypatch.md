@@ -9,6 +9,8 @@ project: taigun
 **I want** the CLI test fixture to share state with the test transaction via dependency injection, not by patching psycopg2.connect
 **So that** the test scaffolding doesn't reach into a third-party library at module level
 
+**Priority:** Medium
+
 ### Context
 
 The `cli_conn` fixture in `tests/conftest.py` calls
@@ -45,7 +47,3 @@ patch `taigun.cli.ConnectionManager` (matching the existing pattern used for
 ### Dependencies
 
 - v1.0 released
-
-### Priority
-
-- Medium

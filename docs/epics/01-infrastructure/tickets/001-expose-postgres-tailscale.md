@@ -11,6 +11,8 @@ status: Done
 **So that** taigun can connect to the database without an SSH tunnel, and schema-breaking
 upgrades cannot happen without a deliberate version bump
 
+**Priority:** High
+
 ### Context
 
 `taiga-taiga-db-1` runs `postgres:12.3` but does not expose port 5432 to the host.
@@ -44,7 +46,3 @@ from the role, matching the same approach used for other services in vertex-stud
 ### Blocks
 
 - 002
-
-### Priority
-
-- High
