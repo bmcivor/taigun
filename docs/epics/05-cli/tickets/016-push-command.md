@@ -10,6 +10,8 @@ status: Done
 **I want** `taigun push` to parse and insert one or more ticket files
 **So that** I can push tickets to Taiga from the command line in a single step
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `taigun push <file>` pushes a single ticket
@@ -28,7 +30,3 @@ status: Done
 ### Blocks
 
 - 019
-
-### Priority
-
-- High

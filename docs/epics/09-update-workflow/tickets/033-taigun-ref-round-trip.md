@@ -9,6 +9,8 @@ project: taigun
 **I want** push to maintain a sidecar file that maps source markdown files to their Taiga refs
 **So that** subsequent pushes can find existing tickets and update them, without taigun ever touching the source files
 
+**Priority:** Medium
+
 ### Context
 
 Assumes the ADR (032) lands on a sidecar file for identification. The sidecar lives in the repo (committed alongside the source) and contains the path → ref mapping that push uses to decide insert vs update.
@@ -46,7 +48,3 @@ ref = 10
 ### Blocks
 
 - 034
-
-### Priority
-
-- Medium

@@ -10,6 +10,8 @@ status: Done
 **I want** resolver.py to look up FK IDs for all referenced entities
 **So that** writers contain only insert logic and no lookup logic
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `resolver.py` implements:
@@ -33,7 +35,3 @@ status: Done
 ### Blocks
 
 - 010, 011, 012, 013, 014
-
-### Priority
-
-- High

@@ -10,6 +10,8 @@ status: Done
 **I want** db.py to insert issues with all supported fields
 **So that** issue tickets pushed via the CLI land correctly in Taiga
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `insert_issue(conn, issue: Issue, resolver)` in `db.py`
@@ -29,7 +31,3 @@ status: Done
 ### Blocks
 
 - 016
-
-### Priority
-
-- High

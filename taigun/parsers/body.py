@@ -8,16 +8,18 @@ class BodyParser:
     """Parses the markdown body of a ticket file into its component fields.
 
     Extracts the subject from the ``## Title`` heading, strips the
-    ``### Priority`` section into a separate field, and assembles all
-    remaining ``###`` sections into the description.
+    ``### Priority`` section into a separate field, and preserves all
+    remaining body content verbatim as the description.
     """
 
     def parse(self, body: str) -> tuple[str, str, Optional[str]]:
         """Parse the markdown body into subject, description, and optional priority.
 
         The first ``## Heading`` becomes the subject. ``### Priority`` is extracted
-        as the priority value and excluded from the description. All other ``###``
-        sections are assembled into the description in order, headings preserved.
+        as the priority value and excluded from the description. Everything else
+        after the title — including the As a / I want / So that block above the
+        first ``###`` heading and the blank lines between headings and content —
+        is preserved verbatim in the description.
 
         Args:
             body: Markdown body text after the frontmatter block.
@@ -29,24 +31,40 @@ class BodyParser:
         Raises:
             ParseError: If no ``## Title`` heading is found in the body.
         """
-        title_match = re.search(r"^## (.+)$", body, re.MULTILINE)
+        lines = body.split("\n")
 
-        if title_match is None:
+        subject: Optional[str] = None
+        title_idx = -1
+        for i, line in enumerate(lines):
+            m = re.match(r"^## (.+)$", line)
+            if m:
+                subject = m.group(1).strip()
+                title_idx = i
+                break
+
+        if subject is None:
             raise ParseError("Body is missing a ## Title heading")
-        subject = title_match.group(1).strip()
 
+        description_lines: list[str] = []
         priority: Optional[str] = None
-        description_parts: list[str] = []
+        in_priority_section = False
 
-        for section in re.split(r"^### ", body, flags=re.MULTILINE)[1:]:
-            heading, _, content = section.partition("\n")
-            heading = heading.strip()
-            content = content.strip()
-            if heading.lower() == "priority":
-                priority = content or None
+        for line in lines[title_idx + 1:]:
+            heading_match = re.match(r"^### (.+)$", line)
+            if heading_match is not None:
+                heading = heading_match.group(1).strip()
+                if heading.lower() == "priority":
+                    in_priority_section = True
+                    continue
+                in_priority_section = False
+                description_lines.append(line)
+            elif in_priority_section:
+                stripped = line.strip()
+                if stripped:
+                    priority = re.sub(r"^[-*]\s*", "", stripped)
             else:
-                description_parts.append(f"### {heading}\n{content}")
+                description_lines.append(line)
 
-        description = "\n\n".join(description_parts)
+        description = "\n".join(description_lines).strip("\n")
 
         return subject, description, priority

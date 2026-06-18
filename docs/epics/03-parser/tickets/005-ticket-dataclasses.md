@@ -10,6 +10,8 @@ status: Done
 **I want** typed dataclasses for Story, Issue, Task, and Epic
 **So that** the parser and writer share a single contract with no ambiguity
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `models.py` defines dataclasses: `Story`, `Issue`, `Task`, `Epic`
@@ -27,7 +29,3 @@ status: Done
 ### Blocks
 
 - 006, 007, 009, 011, 012, 013, 014
-
-### Priority
-
-- High

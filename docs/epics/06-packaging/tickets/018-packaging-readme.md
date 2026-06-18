@@ -10,6 +10,8 @@ status: Done
 **I want** taigun installable via pip and documented in a README
 **So that** I can use it with my own Taiga instance without reading the source
 
+**Priority:** Medium
+
 ### Acceptance criteria
 
 - `pyproject.toml` correct for PyPI publish (name, version, description, classifiers,
@@ -26,7 +28,3 @@ status: Done
 ### Blocks
 
 - 019
-
-### Priority
-
-- Medium

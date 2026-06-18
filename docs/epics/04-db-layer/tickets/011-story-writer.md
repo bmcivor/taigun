@@ -10,6 +10,8 @@ status: Done
 **I want** db.py to insert user stories with all supported fields
 **So that** story tickets pushed via the CLI land correctly in Taiga
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `insert_story(conn, story: Story, resolver)` in `db.py`
@@ -33,7 +35,3 @@ status: Done
 ### Blocks
 
 - 016
-
-### Priority
-
-- High

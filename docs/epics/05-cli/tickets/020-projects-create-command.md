@@ -10,6 +10,8 @@ status: Done
 **I want** `taigun projects create <name> <slug>` to create a new Taiga project from the command line
 **So that** I can bootstrap a project without going into the Taiga UI before pushing tickets
 
+**Priority:** Medium
+
 ### Context
 
 Taiga's Django app normally handles all of this initialisation via signals on project
@@ -37,7 +39,3 @@ having to go into the Taiga UI to create the project.
 ### Blocks
 
 - 019
-
-### Priority
-
-- Medium

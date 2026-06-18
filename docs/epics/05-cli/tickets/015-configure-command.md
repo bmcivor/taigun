@@ -10,6 +10,8 @@ status: Done
 **I want** `taigun configure` to walk me through setting up a connection profile
 **So that** I don't have to manually edit the config file
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `taigun configure` prompts for: host, port (default 5432), database (default `taiga`),
@@ -27,7 +29,3 @@ status: Done
 ### Blocks
 
 - 016, 017
-
-### Priority
-
-- High

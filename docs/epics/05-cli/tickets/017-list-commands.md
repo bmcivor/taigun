@@ -10,6 +10,8 @@ status: Done
 **I want** `taigun projects list`, `taigun epics list`, and `taigun statuses list`
 **So that** I can look up slugs and names without going into the Taiga UI
 
+**Priority:** Medium
+
 ### Acceptance criteria
 
 - `taigun projects list` — prints `name (slug)` for every project
@@ -26,7 +28,3 @@ status: Done
 ### Blocks
 
 - 018
-
-### Priority
-
-- Medium

@@ -10,6 +10,8 @@ status: Done
 **I want** db.py to insert tasks with all supported fields
 **So that** task tickets pushed via the CLI land correctly in Taiga
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `insert_task(conn, task: Task, resolver)` in `db.py`
@@ -31,7 +33,3 @@ status: Done
 ### Blocks
 
 - 016
-
-### Priority
-
-- High

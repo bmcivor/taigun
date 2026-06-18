@@ -11,6 +11,8 @@ status: Done
 **So that** tests run against the actual Taiga DB structure rather than mocks or
 hand-written fixtures
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - New `test-db` service in `docker-compose.yaml`: pinned Postgres image matching what
@@ -31,7 +33,3 @@ hand-written fixtures
 ### Blocks
 
 - 022, 024
-
-### Priority
-
-- High

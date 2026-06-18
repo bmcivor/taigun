@@ -10,6 +10,8 @@ status: Done
 **I want** a db.py module that opens and manages a Postgres connection from config
 **So that** all DB operations share a single connection layer with consistent error handling
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `db.py` exposes a context manager `get_connection(config)` using `psycopg2`
@@ -26,7 +28,3 @@ status: Done
 ### Blocks
 
 - 009, 010
-
-### Priority
-
-- High

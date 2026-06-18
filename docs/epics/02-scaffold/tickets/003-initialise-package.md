@@ -10,6 +10,8 @@ status: Done
 **I want** the project scaffolded with pyproject.toml and the taigun package structure
 **So that** I can start writing modules against a known foundation
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `pyproject.toml` present with:
@@ -38,7 +40,3 @@ status: Done
 ### Blocks
 
 - 004, 005, 006, 007, 008
-
-### Priority
-
-- High

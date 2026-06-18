@@ -9,6 +9,8 @@ project: taigun
 **I want** CI to push tickets to a running Taiga back container and hit the Taiga API
 **So that** the class of NULL-field bugs we hit twice during v1.0 dog-fooding gets caught in CI instead of by the human who notices a broken UI
 
+**Priority:** Medium (prevents an entire class of bug that we know recurs)
+
 ### Context
 
 The current test harness (E7) runs against `test-db` only — a Postgres container with
@@ -51,7 +53,3 @@ back container to the test stack lets CI catch them.
 ### Dependencies
 
 - v1.0 released
-
-### Priority
-
-- Medium (prevents an entire class of bug that we know recurs)

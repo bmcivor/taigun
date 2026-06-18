@@ -9,6 +9,8 @@ project: taigun
 **I want** the same update workflow to apply to projects and milestones, not just ticket types
 **So that** every entity taigun creates can be edited via its source and re-pushed, with no entity-type left as the special case that needs manual UI edits
 
+**Priority:** Low (less common edit case than tickets — name a project and you rarely rename, set sprint dates and you rarely shuffle them)
+
 ### Context
 
 034 handles the four ticket types (story/task/issue/epic). This ticket extends update support to:
@@ -36,7 +38,3 @@ The mechanism is the same — sidecar lookup, diff-then-update — but the field
 
 - 028 (MilestoneWriter must exist first)
 - 034 (ticket update pattern is the template this follows)
-
-### Priority
-
-- Low (less common edit case than tickets — name a project and you rarely rename, set sprint dates and you rarely shuffle them)

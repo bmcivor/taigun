@@ -9,6 +9,8 @@ project: taigun
 **I want** to push one of each ticket type to the vertex-studio Taiga instance
 **So that** the full flow is verified against a real database before release
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - One story, one issue, one task, and one epic pushed successfully
@@ -28,7 +30,3 @@ project: taigun
 ### Blocks
 
 - None
-
-### Priority
-
-- High

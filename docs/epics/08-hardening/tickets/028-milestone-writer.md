@@ -9,6 +9,8 @@ project: taigun
 **I want** to create Taiga milestones (sprints) via taigun
 **So that** sprint setup is part of the same scripted workflow as tickets, and tests don't need raw SQL to fake one
 
+**Priority:** Low (current workflow — create milestones in Taiga UI — is acceptable for solo use)
+
 ### Context
 
 taigun has no `MilestoneWriter`. Stories, tasks, and issues can reference a milestone
@@ -50,7 +52,3 @@ to the user.
 ### Dependencies
 
 - v1.0 released
-
-### Priority
-
-- Low (current workflow — create milestones in Taiga UI — is acceptable for solo use)

@@ -10,6 +10,8 @@ status: Done
 **I want** the markdown body parsed into subject and description fields
 **So that** the full ticket model is populated and ready for the DB writer
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `## Title` → `subject` (text only, no `##`)
@@ -29,7 +31,3 @@ status: Done
 ### Blocks
 
 - 016
-
-### Priority
-
-- High

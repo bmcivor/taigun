@@ -10,6 +10,8 @@ status: Done
 **I want** the YAML frontmatter block parsed into a partial ticket model
 **So that** machine-readable fields are extracted before body parsing begins
 
+**Priority:** High
+
 ### Acceptance criteria
 
 - `parser.py` uses `python-frontmatter` to split frontmatter from body
@@ -27,7 +29,3 @@ status: Done
 ### Blocks
 
 - 007
-
-### Priority
-
-- High

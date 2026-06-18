@@ -11,6 +11,8 @@ status: Done
 **So that** all writers get a correct ref number and references_reference row without
 duplicating the logic
 
+**Priority:** High
+
 ### Context
 
 Taiga uses per-project Postgres sequences (`references_project1`, `references_project2`,
@@ -37,7 +39,3 @@ breaks.
 ### Blocks
 
 - 011, 012, 013, 014
-
-### Priority
-
-- High
