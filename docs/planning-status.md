@@ -1,6 +1,6 @@
 # Planning status
 
-Last updated: 2026-05-14
+Last updated: 2026-07-08
 
 ## What's done
 
@@ -63,25 +63,42 @@ Last updated: 2026-05-14
   `test` stage restructured to install deps before copying code (cached layer); compose
   plugin installation added to Jenkins image in vertex-studio (separate change)
 - E7 complete
+- v1.0 released
+- 027 complete: `Dockerfile` test stage no longer copies `docs/` (dev CLI use is native
+  via `uv run`, not docker); `README.md` and `docs/ticket-format.md` corrected to reflect
+  priority being issue-only; `~/.claude/skills/taigun-tickets/SKILL.md` rewritten around
+  the native workflow. Original scope (separate compose service for CLI) was based on a
+  wrong premise and reduced to a doc + Dockerfile cleanup
+- 030 complete: dog-food audit — pushed synthetic story to `test-db`, compared against
+  source, produced `docs/dog-food-audit.md` with three bugs identified: (a) As a/I want/
+  So that block dropped from description, (b) blank lines between heading and content
+  stripped, (c) priority silently dropped on non-issue types
+- 031 complete: `BodyParser` rewritten to preserve everything between `## Title` and the
+  first `### ` heading, plus blank lines within sections; `FileParser` raises `ParseError`
+  if `priority:` frontmatter or `### Priority` section appears on story/task/epic (Taiga
+  schema has no priority column for those types); all 35 taigun ticket files rewritten
+  to move Priority inline as `**Priority:** X`; 186 tests passing (added 6 parser tests)
+- 032 complete: ADR-004 written covering identification (sidecar `.taigun/state.yaml`),
+  mutability (all fields mutable except identity), removal semantics (error if omitted),
+  conflict semantics (detect via modified_date, prompt), missing-ticket semantics (prompt,
+  default re-insert), idempotency (content hash + verbose no-op output), and audit trail
+  (acting_user)
 
 ## What's next
 
-- v1.0 release (dog-fooding against taigun's own tickets and vertex-play's tickets is complete)
-- E8 (v1.0 hardening, tickets 025–031) — patch-release work covering the known gaps:
-  real-Taiga dog-food for tasks/issues/tags/parent-link/epic-link (025), replacing the
-  `cli_conn` monkeypatch with constructor injection (026), separate compose service for
-  CLI invocations (027), `MilestoneWriter` (028), CI smoke test against a running Taiga
-  API server (029), and audit + fix of data-loss bugs on push (030, 031)
-- E9 (update workflow, tickets 032–035) — close the design omission that taigun is
-  push-only. ADR for identification (sidecar mapping) + mutability semantics (032),
-  sidecar state file for source-to-ref mapping (033), update implementation for the
-  four ticket types (034), and update extension to projects + milestones (035)
+- E8 remaining (025, 026, 028, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
+  epic-link (025), replacing the `cli_conn` monkeypatch with constructor injection (026),
+  `MilestoneWriter` (028), CI smoke test against a running Taiga API server (029)
+- E9 remaining (033, 034, 035): sidecar state file for source-to-ref mapping (033),
+  update implementation for the four ticket types (034), and update extension to
+  projects + milestones (035)
 
 ## Key decisions
 
 - Direct DB writes over API wrapper — see ADR-001
 - Markdown + YAML frontmatter ticket format derived from vertex-play convention — see ADR-002
 - Postgres exposed on Tailscale interface only, hostname resolved dynamically in Ansible — see ADR-003
+- Update workflow uses a sidecar file (`.taigun/state.yaml`) for source-to-ref mapping — see ADR-004
 - Taiga images pinned to `6.9.0` via `docker-compose.override.yml` deployed by the taiga role
 - `tailscale_hostname` added as a shared variable in vertex-studio `vars.yaml`; `jenkins_url`
   refactored to use it
