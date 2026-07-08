@@ -1,16 +1,23 @@
 """Factory helpers for integration tests.
 
-Each function takes an open psycopg2 connection. Prefer using taigun's own
-app code (ProjectCreator etc.) over raw SQL. Raw SQL is permitted only as
-a stop-gap for entities taigun does not yet write (e.g. milestones).
+Each function takes an open psycopg2 connection and uses taigun's own app code
+(ProjectCreator, MilestoneWriter, etc.) to set up the state under test.
 """
 import datetime
 
+import psycopg2.extensions
+
+from taigun.db.milestone import MilestoneWriter
 from taigun.db.project import ProjectCreator
+from taigun.models import Milestone
 from taigun.resolver import Resolver
 
 
-def make_project(conn, name: str = "Test Project", slug: str = "test-project") -> int:
+def make_project(
+    conn: psycopg2.extensions.connection,
+    name: str = "Test Project",
+    slug: str = "test-project",
+) -> int:
     """Create a Taiga project via taigun's ProjectCreator.
 
     Args:
@@ -28,37 +35,39 @@ def make_project(conn, name: str = "Test Project", slug: str = "test-project") -
     return project_id
 
 
-def make_milestone(conn, project_id: int, name: str = "Sprint 1") -> int:
-    """Insert a milestone for the given project.
-
-    Raw SQL because taigun does not have a MilestoneWriter. Used by integration
-    tests that need a milestone to resolve.
+def make_milestone(
+    conn: psycopg2.extensions.connection,
+    project_id: int,
+    name: str = "Sprint 1",
+) -> int:
+    """Create a milestone for the given project via taigun's MilestoneWriter.
 
     Args:
         conn: Open psycopg2 connection.
-        project_id: Project the milestone belongs to.
-        name: Milestone name (also used as the slug after lowercasing).
+        project_id: Project the milestone belongs to (used to resolve the slug
+            back for the writer's project field).
+        name: Milestone name.
 
     Returns:
         Milestone ID.
     """
-    now = datetime.datetime.now(datetime.timezone.utc)
-    today = now.date()
+    resolver = Resolver(conn)
+    project_slug = _project_slug(conn, project_id)
+    today = datetime.date.today()
+
+    milestone = Milestone(
+        project=project_slug,
+        subject=name,
+        estimated_start=today,
+        estimated_finish=today + datetime.timedelta(days=14),
+    )
+    return MilestoneWriter(conn, resolver).write(milestone, "admin")
+
+
+def _project_slug(conn: psycopg2.extensions.connection, project_id: int) -> str:
     with conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO milestones_milestone"
-            ' (name, slug, estimated_start, estimated_finish,'
-            '  created_date, modified_date, closed, "order", project_id)'
-            " VALUES (%s, %s, %s, %s, %s, %s, false, 1, %s)"
-            " RETURNING id",
-            (
-                name,
-                name.lower().replace(" ", "-"),
-                today,
-                today + datetime.timedelta(days=14),
-                now,
-                now,
-                project_id,
-            ),
-        )
-        return cur.fetchone()[0]
+        cur.execute("SELECT slug FROM projects_project WHERE id = %s", (project_id,))
+        row = cur.fetchone()
+        if row is None:
+            raise ValueError(f"No project with id {project_id}")
+        return row[0]

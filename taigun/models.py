@@ -1,3 +1,4 @@
+import datetime
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -51,3 +52,13 @@ class Epic:
     tags: list[str] = field(default_factory=list)
     status: Optional[str] = None
     color: Optional[str] = None
+
+
+@dataclass
+class Milestone:
+    project: str
+    subject: str
+    estimated_start: datetime.date
+    estimated_finish: datetime.date
+    closed: bool = False
+    assignee: Optional[str] = None

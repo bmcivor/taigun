@@ -52,7 +52,7 @@ Optional. Explicit statement of what is in and out of scope.
 
 | Field | Required | Applies to | Description |
 |---|---|---|---|
-| `type` | Yes | all | `story`, `issue`, `task`, `epic` |
+| `type` | Yes | all | `story`, `issue`, `task`, `epic`, `milestone` |
 | `project` | Yes | all | Project slug (see `taigun projects list`) |
 | `epic` | No | story, task | Epic ref number to link to |
 | `assignee` | No | all | Taiga username |
@@ -60,6 +60,9 @@ Optional. Explicit statement of what is in and out of scope.
 | `tags` | No | all | Comma-separated list |
 | `status` | No | all | Status name — defaults to first status for the project |
 | `parent` | No | task | Parent user story ref number |
+| `estimated_start` | Yes | milestone | Sprint start date (`YYYY-MM-DD`) |
+| `estimated_finish` | Yes | milestone | Sprint end date (`YYYY-MM-DD`) |
+| `closed` | No | milestone | Boolean — whether the sprint is closed. Defaults to `false` |
 
 ## Body fields by type
 
@@ -97,6 +100,34 @@ Same as user story body, minus the As a / I want / So that block.
 Taiga's schema has no priority column for stories, tasks, or epics — only issues.
 taigun raises `ParseError` if a `### Priority` section or `priority:` frontmatter
 field appears on any non-issue ticket. Remove the section from those files.
+
+### Milestone
+
+Milestones (Taiga's word for sprints) are created by taigun the same way as
+tickets — as markdown files with `type: milestone` in the frontmatter.
+Taiga's `milestones_milestone` table has no description column, so a milestone
+file's body must contain only the `## Title` heading. Anything after the title
+raises `ParseError`.
+
+| Body field | Maps to |
+|---|---|
+| `## Title` | `name` (slug is derived from name) |
+
+Example milestone file:
+
+```markdown
+---
+type: milestone
+project: my-project
+estimated_start: 2026-08-01
+estimated_finish: 2026-08-14
+---
+
+## Sprint 3
+```
+
+Optional `closed: true` marks the sprint as closed. Optional `assignee: <username>`
+sets the milestone owner (defaults to the acting user).
 
 ## Description assembly
 

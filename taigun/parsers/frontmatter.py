@@ -1,8 +1,9 @@
+import datetime
 import frontmatter
 from typing import Optional, Union
 
 from taigun.exceptions import ParseError
-from taigun.models import Story, Issue, Task, Epic
+from taigun.models import Story, Issue, Task, Epic, Milestone
 
 
 class FrontmatterParser:
@@ -15,9 +16,10 @@ class FrontmatterParser:
     KNOWN_KEYS = {
         "type", "project", "epic", "assignee", "milestone",
         "tags", "status", "parent", "issue_type", "severity", "priority",
+        "estimated_start", "estimated_finish", "closed",
     }
 
-    TICKET_TYPES = {"story", "issue", "task", "epic"}
+    TICKET_TYPES = {"story", "issue", "task", "epic", "milestone"}
 
     def parse(self, text: str) -> tuple[dict, str]:
         """Split a markdown string into frontmatter fields and body text.
@@ -55,7 +57,7 @@ class FrontmatterParser:
 
         return metadata, body
 
-    def build_partial(self, metadata: dict) -> Union[Story, Issue, Task, Epic]:
+    def build_partial(self, metadata: dict) -> Union[Story, Issue, Task, Epic, Milestone]:
         """Construct a partial ticket dataclass from frontmatter metadata.
 
         Body fields (subject, description) are left at their defaults.
@@ -64,9 +66,29 @@ class FrontmatterParser:
             metadata: Parsed frontmatter dict.
 
         Returns:
-            A partially populated Story, Issue, Task, or Epic dataclass.
+            A partially populated Story, Issue, Task, Epic, or Milestone dataclass.
+
+        Raises:
+            ParseError: If required milestone fields are missing or of the wrong type.
         """
         ticket_type = metadata["type"]
+
+        if ticket_type == "milestone":
+            for required in ("estimated_start", "estimated_finish"):
+                if required not in metadata:
+                    raise ParseError(
+                        f"Milestone missing required frontmatter field: '{required}'"
+                    )
+
+            return Milestone(
+                project=metadata["project"],
+                subject="",
+                estimated_start=_as_date(metadata["estimated_start"], "estimated_start"),
+                estimated_finish=_as_date(metadata["estimated_finish"], "estimated_finish"),
+                closed=bool(metadata.get("closed", False)),
+                assignee=metadata.get("assignee"),
+            )
+
         common = {
             "project": metadata["project"],
             "subject": "",
@@ -119,3 +141,19 @@ class FrontmatterParser:
             return [str(t).strip() for t in value]
 
         return [t.strip() for t in str(value).split(",") if t.strip()]
+
+
+def _as_date(value, field_name: str) -> datetime.date:
+    """Coerce a frontmatter value to a datetime.date.
+
+    YAML parses `2026-08-01` as a native date, but a quoted or otherwise
+    stringy value comes through as a string that needs parsing.
+    """
+    if isinstance(value, datetime.datetime):
+        return value.date()
+    if isinstance(value, datetime.date):
+        return value
+    try:
+        return datetime.date.fromisoformat(str(value))
+    except ValueError as e:
+        raise ParseError(f"Invalid date for '{field_name}': {value!r} ({e})") from e
