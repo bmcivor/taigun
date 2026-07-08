@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+status: Done
 ---
 
 ## 27. Separate compose service for taigun CLI invocations

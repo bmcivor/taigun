@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+status: Done
 ---
 
 ## 30. Audit what fields actually land on push, vs what was in the source markdown

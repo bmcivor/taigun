@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+status: Done
 ---
 
 ## 31. Fix the data-loss bugs surfaced by the audit
