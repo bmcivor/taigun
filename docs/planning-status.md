@@ -83,12 +83,18 @@ Last updated: 2026-07-08
   conflict semantics (detect via modified_date, prompt), missing-ticket semantics (prompt,
   default re-insert), idempotency (content hash + verbose no-op output), and audit trail
   (acting_user)
+- 028 complete: `MilestoneWriter` added — milestones are created via `type: milestone`
+  markdown files (frontmatter + `## Title` only; extra body content raises `ParseError`).
+  FrontmatterParser accepts `estimated_start`, `estimated_finish`, `closed`. `taigun push`
+  routes milestone type to the writer; output is `✓ milestone: "Sprint 3"` (no ref, since
+  milestones have no ref column). `tests/factories.py::make_milestone` rewritten to use
+  `MilestoneWriter` — raw-SQL exception removed
 
 ## What's next
 
-- E8 remaining (025, 026, 028, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
+- E8 remaining (025, 026, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
   epic-link (025), replacing the `cli_conn` monkeypatch with constructor injection (026),
-  `MilestoneWriter` (028), CI smoke test against a running Taiga API server (029)
+  CI smoke test against a running Taiga API server (029)
 - E9 remaining (033, 034, 035): sidecar state file for source-to-ref mapping (033),
   update implementation for the four ticket types (034), and update extension to
   projects + milestones (035)

@@ -1,7 +1,11 @@
+import datetime
+from pathlib import Path
+
 import pytest
+
 from taigun.exceptions import ParseError
+from taigun.models import Story, Issue, Task, Epic, Milestone
 from taigun.parsers.file import FileParser
-from taigun.models import Story, Issue, Task, Epic
 
 
 FRONTMATTER_STORY = "---\ntype: story\nproject: p\n---\n\n"
@@ -155,3 +159,69 @@ class TestFileParser:
             "**So that** reason\n\n"
             "### Acceptance Criteria\n\n- done"
         )
+
+    def test_milestone_basic(self, tmp_path: Path) -> None:
+        """Setup: milestone file with only required fields.
+        Expectations: returns Milestone with subject, dates, and closed=False.
+        """
+        f = tmp_path / "sprint.md"
+        f.write_text(
+            "---\ntype: milestone\nproject: p\n"
+            "estimated_start: 2026-08-01\n"
+            "estimated_finish: 2026-08-14\n---\n\n"
+            "## Sprint 3\n"
+        )
+        result = self.parser.parse(f)
+
+        assert isinstance(result, Milestone)
+        assert result.subject == "Sprint 3"
+        assert result.estimated_start == datetime.date(2026, 8, 1)
+        assert result.estimated_finish == datetime.date(2026, 8, 14)
+        assert result.closed is False
+        assert result.assignee is None
+
+    def test_milestone_with_optional_fields(self, tmp_path: Path) -> None:
+        """Setup: milestone file with closed and assignee set.
+        Expectations: those fields populated on the returned Milestone.
+        """
+        f = tmp_path / "sprint.md"
+        f.write_text(
+            "---\ntype: milestone\nproject: p\n"
+            "estimated_start: 2026-08-01\n"
+            "estimated_finish: 2026-08-14\n"
+            "closed: true\n"
+            "assignee: bmcivor\n---\n\n"
+            "## Sprint 1\n"
+        )
+        result = self.parser.parse(f)
+
+        assert result.closed is True
+        assert result.assignee == "bmcivor"
+
+    def test_milestone_missing_dates_raises(self, tmp_path: Path) -> None:
+        """Setup: milestone file missing estimated_finish.
+        Expectations: ParseError naming the missing field.
+        """
+        f = tmp_path / "sprint.md"
+        f.write_text(
+            "---\ntype: milestone\nproject: p\n"
+            "estimated_start: 2026-08-01\n---\n\n"
+            "## Sprint 3\n"
+        )
+        with pytest.raises(ParseError, match="estimated_finish"):
+            self.parser.parse(f)
+
+    def test_milestone_body_beyond_title_raises(self, tmp_path: Path) -> None:
+        """Setup: milestone file with content after the ## Title.
+        Expectations: ParseError — schema has no description for milestones.
+        """
+        f = tmp_path / "sprint.md"
+        f.write_text(
+            "---\ntype: milestone\nproject: p\n"
+            "estimated_start: 2026-08-01\n"
+            "estimated_finish: 2026-08-14\n---\n\n"
+            "## Sprint 3\n\n"
+            "### Notes\n\nsome extra text\n"
+        )
+        with pytest.raises(ParseError, match="only the `## Title`"):
+            self.parser.parse(f)

@@ -8,6 +8,7 @@ from taigun.db.connection import ConnectionManager
 from taigun.db.epic import EpicWriter
 from taigun.db.issue import IssueWriter
 from taigun.db.lister import Lister
+from taigun.db.milestone import MilestoneWriter
 from taigun.db.project import ProjectCreator, ProjectExistsError
 from taigun.db.story import StoryWriter
 from taigun.db.task import TaskWriter
@@ -20,6 +21,7 @@ _WRITERS = {
     "issue": IssueWriter,
     "task": TaskWriter,
     "epic": EpicWriter,
+    "milestone": MilestoneWriter,
 }
 
 app = typer.Typer(help="Write Taiga tickets directly to the database.")
@@ -112,6 +114,8 @@ def push(
 
         if dry_run:
             typer.echo(f"~ {ticket_type}: \"{ticket.subject}\"")
+        elif ticket_type == "milestone":
+            typer.echo(f"✓ {ticket_type}: \"{ticket.subject}\"")
         else:
             typer.echo(f"✓ #{ref} {ticket_type}: \"{ticket.subject}\"")
 
