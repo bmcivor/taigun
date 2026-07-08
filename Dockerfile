@@ -15,7 +15,6 @@ RUN uv sync --frozen --group dev --no-install-project
 
 COPY taigun/ ./taigun/
 COPY tests/ ./tests/
-COPY docs/ ./docs/
 
 RUN uv sync --frozen --group dev
 
