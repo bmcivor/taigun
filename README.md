@@ -109,13 +109,9 @@ tags: backend, auth
 
 - criterion one
 - criterion two
-
-### Priority
-
-High
 ```
 
-Supported types: `story`, `issue`, `task`, `epic`.
+Supported types: `story`, `issue`, `task`, `epic`. `### Priority` is issue-only — it errors on any other ticket type.
 
 See [docs/ticket-format.md](docs/ticket-format.md) for the full field reference.
 

@@ -74,11 +74,10 @@ Optional. Explicit statement of what is in and out of scope.
 | `### Scope boundary` | Appended to `description` |
 | `### Dependencies` | Appended to `description` |
 | `### Blocks` | Appended to `description` |
-| `### Priority` | `priority` FK |
 
 ### Issue
 
-Same as user story body, with two additional frontmatter fields:
+Same as user story body, plus `### Priority` mapping to the `priority` FK, and two additional frontmatter fields:
 
 | Frontmatter field | Maps to | Values |
 |---|---|---|
@@ -92,6 +91,12 @@ Same as user story body. `parent` frontmatter field links to a user story by ref
 ### Epic
 
 Same as user story body, minus the As a / I want / So that block.
+
+### Priority is issue-only
+
+Taiga's schema has no priority column for stories, tasks, or epics — only issues.
+taigun raises `ParseError` if a `### Priority` section or `priority:` frontmatter
+field appears on any non-issue ticket. Remove the section from those files.
 
 ## Description assembly
 
