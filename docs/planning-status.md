@@ -89,12 +89,22 @@ Last updated: 2026-07-08
   routes milestone type to the writer; output is `✓ milestone: "Sprint 3"` (no ref, since
   milestones have no ref column). `tests/factories.py::make_milestone` rewritten to use
   `MilestoneWriter` — raw-SQL exception removed
+- 033 complete: sidecar state file — `taigun/state.py` implements `StateFile`
+  (load/find/record/save), `locate_sidecar` (walks up from source file's directory
+  looking for `.taigun/state.yaml`), and `hash_file` (sha256 of raw bytes). YAML
+  format, entries stored relative to the repo root for portability. Load errors loudly
+  on malformed YAML, duplicate `file_path`, or missing required fields. `taigun push`
+  now loads the sidecar, refuses to re-push a source file that already has an entry
+  (surfaces "already pushed as #<ref> in <project>" — actual update handling is 034's
+  job), and records + saves after each successful insert
 
 ## What's next
 
 - E8 remaining (025, 026, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
   epic-link (025), replacing the `cli_conn` monkeypatch with constructor injection (026),
   CI smoke test against a running Taiga API server (029)
+- E9 remaining (034, 035): update implementation for the four ticket types (034),
+  extension to projects + milestones (035)
 - E9 remaining (033, 034, 035): sidecar state file for source-to-ref mapping (033),
   update implementation for the four ticket types (034), and update extension to
   projects + milestones (035)
