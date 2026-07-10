@@ -15,6 +15,7 @@ from taigun.db.task import TaskWriter
 from taigun.exceptions import ResolveError
 from taigun.parsers.file import FileParser
 from taigun.resolver import Resolver
+from taigun.state import StateFile, hash_file, locate_sidecar
 
 _WRITERS = {
     "story": StoryWriter,
@@ -90,11 +91,25 @@ def push(
     dry_run: bool = typer.Option(False, "--dry-run", help="Resolve FKs but do not insert."),
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
 ) -> None:
-    """Parse and push one or more ticket files to Taiga."""
+    """Parse and push one or more ticket files to Taiga.
+
+    On non-dry-run pushes, the sidecar (``.taigun/state.yaml``) is located by
+    walking up from the first source file's directory. All source files are
+    expected to live in the same repo. Each successful insert is recorded in
+    the sidecar. Re-pushing a source file that already has an entry raises —
+    update handling arrives in 034.
+    """
     config = ConfigManager().load(profile)
     parser = FileParser()
     manager = ConnectionManager(config)
     any_failed = False
+
+    if files and not dry_run:
+        sidecar_path = locate_sidecar(Path(files[0]).resolve().parent)
+        state = StateFile(sidecar_path)
+        state.load()
+    else:
+        state = None
 
     for path in files:
         try:
@@ -102,10 +117,28 @@ def push(
             ticket_type = type(ticket).__name__.lower()
             writer_class = _WRITERS[ticket_type]
 
+            if state is not None:
+                existing = state.find(path)
+                if existing is not None:
+                    raise RuntimeError(
+                        f"already pushed as #{existing.ref} in project "
+                        f"'{existing.project}'; taigun update not yet available "
+                        f"(remove the entry from {state.path} to force a fresh push)"
+                    )
+
             with manager.connect(dry_run=dry_run) as conn:
                 resolver = Resolver(conn)
                 writer = writer_class(conn, resolver)
                 ref = writer.write(ticket, config.acting_user)
+
+            if state is not None:
+                state.record(
+                    path,
+                    project=ticket.project,
+                    ref=ref,
+                    ticket_type=ticket_type,
+                    content_hash=hash_file(path),
+                )
 
         except Exception as e:
             typer.echo(f"✗ {Path(path).name}: {e}", err=True)
@@ -118,6 +151,9 @@ def push(
             typer.echo(f"✓ {ticket_type}: \"{ticket.subject}\"")
         else:
             typer.echo(f"✓ #{ref} {ticket_type}: \"{ticket.subject}\"")
+
+    if state is not None:
+        state.save()
 
     if any_failed:
         raise typer.Exit(code=1)

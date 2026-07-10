@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+status: Done
 ---
 
 ## 33. Sidecar state file for source-to-ref mapping
