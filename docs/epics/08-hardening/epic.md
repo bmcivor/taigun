@@ -1,6 +1,7 @@
 ---
 type: epic
 project: taigun
+assignee: bmcivor
 ---
 
 ## E8 — v1.0 hardening

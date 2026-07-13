@@ -1,6 +1,7 @@
 ---
 type: epic
 project: taigun
+assignee: bmcivor
 ---
 
 ## E10 — Bugs surfaced by dog-food coverage pass

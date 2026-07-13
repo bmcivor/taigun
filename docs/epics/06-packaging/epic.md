@@ -1,6 +1,7 @@
 ---
 type: epic
 project: taigun
+assignee: bmcivor
 ---
 
 ## E6 — Packaging & release
