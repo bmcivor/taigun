@@ -120,12 +120,20 @@ Last updated: 2026-07-13
   `tests/db/test_connection.py` rewritten to pass `_connection_factory=` directly
   instead of `patch("...psycopg2.connect", ...)`. No `psycopg2.connect` monkeypatching
   anywhere in the test suite
+- New epic E10 opened for bugs surfaced by the 025 dog-food pass; each bug lives as
+  its own ticket with a reproducer and proposed fix
+- 036 complete (first E10 ticket): `locate_sidecar` now walks up twice — for an
+  existing `.taigun/state.yaml` first, then for `.git/` as the repo-root marker.
+  If neither is found it raises `StateError` instead of silently anchoring the
+  sidecar under the first source file's directory. Three new regression tests in
+  `tests/test_state.py::TestLocateSidecar`; `tests/cli/test_push.py::make_config`
+  now creates `.git/` under `tmp_path` so push tests still work
 
 ## What's next
 
-- E8 remaining (025): real-Taiga dog-food for tasks/issues/tags/parent-link/
-  epic-link. Includes an API-render check per pushed item — this is the
-  coverage 029 was going to provide
+- E8 remaining (025): re-run real-Taiga dog-food for tasks/issues/tags/parent-link/
+  epic-link now that 036 unblocks multi-directory push. Includes an API-render
+  check per pushed item — this is the coverage 029 was going to provide
 
 ## Postponed
 

@@ -232,13 +232,41 @@ class TestLocateSidecar:
 
         assert found == sidecar
 
-    def test_no_sidecar_returns_default_at_start(self, tmp_path: Path) -> None:
-        """Setup: no `.taigun/` anywhere on the path.
-        Expectations: returns start/.taigun/state.yaml — where it would be created.
+    def test_no_sidecar_falls_back_to_git_repo_root(self, tmp_path: Path) -> None:
+        """Setup: no `.taigun/` anywhere, but a `.git/` at ``tmp_path``.
+        Expectations: locate_sidecar returns ``tmp_path/.taigun/state.yaml`` —
+            the sidecar is anchored to the git root, not the starting dir.
         """
-        found = locate_sidecar(tmp_path)
+        (tmp_path / ".git").mkdir()
+        nested = tmp_path / "docs" / "epics" / "01"
+        nested.mkdir(parents=True)
+
+        found = locate_sidecar(nested)
 
         assert found == tmp_path / ".taigun" / "state.yaml"
+
+    def test_no_sidecar_and_no_git_raises(self, tmp_path: Path) -> None:
+        """Setup: no `.taigun/` and no `.git/` anywhere on the walk-up.
+        Expectations: locate_sidecar raises StateError instead of returning a
+            silently-wrong default (E10 036).
+        """
+        with pytest.raises(StateError, match="No .taigun/ or .git/ found"):
+            locate_sidecar(tmp_path)
+
+    def test_existing_sidecar_wins_over_git_root(self, tmp_path: Path) -> None:
+        """Setup: `.git/` at ``tmp_path`` AND a `.taigun/state.yaml` in a
+            nested dir below.
+        Expectations: locate_sidecar returns the nested sidecar (already
+            established location wins over the git-root default).
+        """
+        (tmp_path / ".git").mkdir()
+        nested = tmp_path / "docs" / "epics"
+        (nested / ".taigun").mkdir(parents=True)
+        (nested / ".taigun" / "state.yaml").write_text("entries: []\n")
+
+        found = locate_sidecar(nested / "01")
+
+        assert found == nested / ".taigun" / "state.yaml"
 
 
 class TestHashFile:
