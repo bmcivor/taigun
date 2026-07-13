@@ -13,6 +13,7 @@ import psycopg2
 import pytest
 
 from taigun.config import Profile
+from taigun.db.connection import ConnectionManager
 
 
 @pytest.fixture
@@ -61,8 +62,12 @@ def real_conn():
 
 @pytest.fixture
 def cli_conn(real_conn, monkeypatch):
-    """Route the CLI's psycopg2.connect() calls to real_conn so CLI tests
-    share state with the test's open transaction (no commit needed).
+    """Route the CLI's ConnectionManager to real_conn so CLI tests share
+    state with the test's open transaction (no commit needed).
+
+    Uses ConnectionManager's ``_connection_factory`` seam: the CLI's binding
+    of ``taigun.cli.ConnectionManager`` is replaced with a subclass that
+    passes a factory returning a savepoint-scoped wrapper around real_conn.
 
     Each CLI invocation gets its own SAVEPOINT on real_conn:
       - CLI commit()   -> RELEASE SAVEPOINT   (kept inside real_conn's txn)
@@ -103,11 +108,15 @@ def cli_conn(real_conn, monkeypatch):
         def __getattr__(self, name):
             return getattr(self._conn, name)
 
-    def fake_connect(*args, **kwargs):
+    def shared_factory(*args, **kwargs):
         wrapper = SharedConnWrapper(real_conn)
         wrapper._begin()
         return wrapper
 
-    monkeypatch.setattr("taigun.db.connection.psycopg2.connect", fake_connect)
+    class SharedConnectionManager(ConnectionManager):
+        def __init__(self, config):
+            super().__init__(config, _connection_factory=shared_factory)
+
+    monkeypatch.setattr("taigun.cli.ConnectionManager", SharedConnectionManager)
 
     yield real_conn

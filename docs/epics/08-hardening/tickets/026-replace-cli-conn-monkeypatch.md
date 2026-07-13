@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+status: Done
 ---
 
 ## 26. Replace cli_conn monkeypatch with a proper test seam
