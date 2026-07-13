@@ -4,6 +4,14 @@ from typing import Optional
 
 import psycopg2.extensions
 
+from taigun.db.update_helpers import (
+    check_taiga_conflict,
+    parse_taiga_timestamp,
+)
+from taigun.exceptions import (
+    MilestoneConflictError,
+    MilestoneMissingError,
+)
 from taigun.models import Milestone
 from taigun.resolver import Resolver
 
@@ -61,6 +69,89 @@ class MilestoneWriter:
                 ),
             )
             return cur.fetchone()[0]
+
+    def update(
+        self,
+        milestone: Milestone,
+        milestone_id: int,
+        metadata_keys: set,
+        acting_user: str,
+        last_pushed_at: str,
+        ignore_conflict: bool = False,
+    ) -> None:
+        """Update an existing milestone from the parsed model.
+
+        Same semantics as the ticket writers' ``update()`` methods (see
+        ``StoryWriter.update``): fetch by (project, id), refuse if the row is
+        gone, raise on modified_date drift, raise if a previously-set field
+        is silently dropped, then UPDATE.
+
+        Args:
+            milestone: Re-parsed Milestone model.
+            milestone_id: Sidecar-recorded milestones_milestone.id (the
+                sidecar stores this in its ``ref`` field for milestones).
+            metadata_keys: Frontmatter keys present in the source — used to
+                distinguish "omitted" from "explicitly null".
+            acting_user: Username driving the update.
+            last_pushed_at: ISO timestamp from the sidecar.
+            ignore_conflict: If True, skip the modified_date drift check
+                (caller has already prompted the user).
+
+        Raises:
+            MilestoneMissingError: The id does not exist in this project.
+            MilestoneConflictError: Row was modified after ``last_pushed_at``.
+        """
+        project_id = self._resolver.resolve_project(milestone.project)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, modified_date"
+                " FROM milestones_milestone WHERE project_id = %s AND id = %s",
+                (project_id, milestone_id),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise MilestoneMissingError(
+                f"milestone id {milestone_id} not found in project "
+                f"'{milestone.project}'"
+            )
+
+        object_id, taiga_modified = row
+
+        if not ignore_conflict:
+            check_taiga_conflict(
+                taiga_modified,
+                parse_taiga_timestamp(last_pushed_at),
+                conflict_exception=MilestoneConflictError,
+            )
+
+        if milestone.assignee is not None:
+            owner_id: Optional[int] = self._resolver.resolve_user(milestone.assignee)
+        else:
+            owner_id = self._resolver.resolve_user(acting_user)
+
+        slug = _slugify(milestone.subject)
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "UPDATE milestones_milestone"
+                " SET name = %s, slug = %s,"
+                "     estimated_start = %s, estimated_finish = %s,"
+                "     closed = %s, owner_id = %s, modified_date = %s"
+                " WHERE id = %s",
+                (
+                    milestone.subject,
+                    slug,
+                    milestone.estimated_start,
+                    milestone.estimated_finish,
+                    milestone.closed,
+                    owner_id,
+                    now,
+                    object_id,
+                ),
+            )
 
     def _next_order(self, project_id: int) -> int:
         """Return the next available order value for this project.

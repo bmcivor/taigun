@@ -9,11 +9,14 @@ from taigun.db.epic import EpicWriter
 from taigun.db.issue import IssueWriter
 from taigun.db.lister import Lister
 from taigun.db.milestone import MilestoneWriter
-from taigun.db.project import ProjectCreator, ProjectExistsError
+from taigun.db.project import ProjectCreator, ProjectExistsError, ProjectUpdater
 from taigun.db.story import StoryWriter
 from taigun.db.task import TaskWriter
 from taigun.exceptions import (
     IdentityChangeError,
+    MilestoneConflictError,
+    MilestoneMissingError,
+    ProjectMissingError,
     ResolveError,
     TicketConflictError,
     TicketMissingError,
@@ -218,14 +221,11 @@ def _handle_upsert(
             f"remove the sidecar entry to push as a new ticket"
         )
 
-    if ticket_type == "milestone":
-        raise NotImplementedError(
-            "milestone update is deferred to ticket 035; edit in Taiga UI for now"
-        )
+    ref_label = "" if ticket_type == "milestone" else f"#{entry.ref} "
 
     current_hash = hash_file(path)
     if current_hash == entry.content_hash:
-        typer.echo(f"(unchanged) #{entry.ref} {ticket_type}: \"{ticket.subject}\"")
+        typer.echo(f"(unchanged) {ref_label}{ticket_type}: \"{ticket.subject}\"")
         return
 
     with manager.connect() as conn:
@@ -238,13 +238,13 @@ def _handle_upsert(
                 config.acting_user, entry.last_pushed_at,
             )
 
-        except TicketConflictError as e:
+        except (TicketConflictError, MilestoneConflictError) as e:
             if not force and not typer.confirm(
-                f"Taiga row for #{entry.ref} was modified at "
+                f"Taiga row for {ref_label}{ticket_type} was modified at "
                 f"{e.taiga_modified_date} (after last push). Overwrite?",
                 default=False,
             ):
-                typer.echo(f"↷ #{entry.ref} {ticket_type}: skipped (Taiga was edited)")
+                typer.echo(f"↷ {ref_label}{ticket_type}: skipped (Taiga was edited)")
                 return
 
             writer.update(
@@ -253,15 +253,16 @@ def _handle_upsert(
                 ignore_conflict=True,
             )
 
-        except TicketMissingError as e:
+        except (TicketMissingError, MilestoneMissingError) as e:
             if not force and not typer.confirm(
-                f"{e}. Re-insert as a new ticket?",
+                f"{e}. Re-insert as new?",
                 default=True,
             ):
                 typer.echo(f"↷ {ticket_type}: skipped (not in Taiga, user declined re-insert)")
                 return
 
             new_ref = writer.write(ticket, config.acting_user)
+            new_ref_label = "" if ticket_type == "milestone" else f"#{new_ref} "
 
             state.record(
                 path,
@@ -270,7 +271,7 @@ def _handle_upsert(
                 ticket_type=ticket_type,
                 content_hash=current_hash,
             )
-            typer.echo(f"✓ #{new_ref} {ticket_type}: \"{ticket.subject}\" (re-inserted)")
+            typer.echo(f"✓ {new_ref_label}{ticket_type}: \"{ticket.subject}\" (re-inserted)")
             return
 
     state.record(
@@ -280,7 +281,7 @@ def _handle_upsert(
         ticket_type=ticket_type,
         content_hash=current_hash,
     )
-    typer.echo(f"↺ #{entry.ref} {ticket_type}: \"{ticket.subject}\" (updated)")
+    typer.echo(f"↺ {ref_label}{ticket_type}: \"{ticket.subject}\" (updated)")
 
 
 @projects_app.command("create")
@@ -305,6 +306,34 @@ def projects_create(
             raise typer.Exit(code=1)
 
     typer.echo(f"Created project #{project_id}: {project_slug}")
+
+
+@projects_app.command("update")
+def projects_update(
+    slug: str = typer.Argument(..., help="Slug of the project to update."),
+    name: Optional[str] = typer.Option(None, "--name", help="New project name."),
+    description: Optional[str] = typer.Option(
+        None, "--description",
+        help="New project description (pass '' to clear).",
+    ),
+    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+) -> None:
+    """Update an existing Taiga project's name and/or description."""
+    if name is None and description is None:
+        typer.echo("Nothing to update: pass --name and/or --description.", err=True)
+        raise typer.Exit(code=1)
+
+    config = ConfigManager().load(profile)
+
+    with ConnectionManager(config).connect() as conn:
+        updater = ProjectUpdater(conn)
+        try:
+            updater.update(slug, name=name, description=description)
+        except ProjectMissingError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(code=1)
+
+    typer.echo(f"Updated project '{slug}'")
 
 
 @projects_app.command("list")

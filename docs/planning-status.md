@@ -106,13 +106,19 @@ Last updated: 2026-07-13
   Field-removal semantics per ADR-004: dropping a previously-set frontmatter field
   raises `FieldClearedError` — clear requires an explicit `field: null`. Milestone
   update is deferred to 035 with a clear error message when re-pushed
+- 035 complete: milestone update via `push` (`MilestoneWriter.update()` following the
+  034 pattern; no field-cleared check since milestone owner defaults to acting_user);
+  `taigun projects update <slug> [--name] [--description]` — flag-driven, no source
+  file, no sidecar. Entity-scoped exceptions added (`MilestoneMissingError`,
+  `MilestoneConflictError`, `ProjectMissingError`). `check_taiga_conflict` /
+  `check_field_cleared` helpers gained an exception-class parameter so each entity
+  raises its own type. E9 complete
 
 ## What's next
 
 - E8 remaining (025, 026, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
   epic-link (025), replacing the `cli_conn` monkeypatch with constructor injection (026),
   CI smoke test against a running Taiga API server (029)
-- E9 remaining (035): update extension to projects + milestones
 
 ## Key decisions
 

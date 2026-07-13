@@ -1,8 +1,8 @@
 import datetime
 import json
-from typing import Tuple
+from typing import Optional, Tuple
 
-from taigun.exceptions import ResolveError
+from taigun.exceptions import ProjectMissingError, ResolveError
 
 
 class ProjectCreator:
@@ -276,6 +276,66 @@ class ProjectCreator:
                     role.get("order", 1),
                     role.get("computable", True),
                 ),
+            )
+
+
+class ProjectUpdater:
+    """Updates an existing Taiga project's mutable fields.
+
+    Scoped narrowly to the fields ``taigun projects update`` exposes today
+    (name, description). Add more when the CLI grows more flags.
+
+    Must be used within a transaction managed by ConnectionManager.
+    """
+
+    def __init__(self, conn) -> None:
+        self._conn = conn
+
+    def update(
+        self,
+        slug: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> None:
+        """Update the project identified by ``slug``.
+
+        Only fields passed as non-``None`` are written. Callers that want
+        to clear ``description`` should pass an empty string.
+
+        Raises:
+            ProjectMissingError: No project has that slug.
+        """
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT id FROM projects_project WHERE slug = %s",
+                (slug,),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise ProjectMissingError(f"project with slug '{slug}' not found")
+
+        assignments = []
+        values: list = []
+        if name is not None:
+            assignments.append("name = %s")
+            values.append(name)
+        if description is not None:
+            assignments.append("description = %s")
+            values.append(description)
+
+        if not assignments:
+            return
+
+        assignments.append("modified_date = %s")
+        values.append(datetime.datetime.now(datetime.timezone.utc))
+        values.append(row[0])
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE projects_project SET {', '.join(assignments)}"
+                " WHERE id = %s",
+                tuple(values),
             )
 
 

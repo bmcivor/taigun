@@ -35,3 +35,23 @@ class FieldClearedError(Exception):
     the previous push. Per ADR-004 clearing requires an explicit ``field:
     null`` so we don't lose data to a typo or an accidental deletion.
     """
+
+
+class MilestoneMissingError(Exception):
+    """Raised when a milestone update targets a milestone that no longer
+    exists in Taiga."""
+
+
+class MilestoneConflictError(Exception):
+    """Raised when Taiga's milestone row was modified after the last push
+    recorded in the sidecar.
+    """
+
+    def __init__(self, message: str, taiga_modified_date: str) -> None:
+        super().__init__(message)
+        self.taiga_modified_date = taiga_modified_date
+
+
+class ProjectMissingError(Exception):
+    """Raised when ``taigun projects update`` targets a slug that doesn't
+    exist in Taiga."""
