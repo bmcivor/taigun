@@ -1,6 +1,13 @@
+import datetime
 from typing import Optional
 
 from taigun.db.base import BaseWriter
+from taigun.db.update_helpers import (
+    check_field_cleared,
+    check_taiga_conflict,
+    parse_taiga_timestamp,
+)
+from taigun.exceptions import TicketMissingError
 from taigun.models import Story
 
 
@@ -88,3 +95,125 @@ class StoryWriter(BaseWriter):
                 )
 
         return ref
+
+    def update(
+        self,
+        story: Story,
+        ref: int,
+        metadata_keys: set,
+        acting_user: str,
+        last_pushed_at: str,
+        ignore_conflict: bool = False,
+    ) -> None:
+        """Update an existing story from the parsed model.
+
+        Args:
+            story: Populated Story model from the (re-)parsed source file.
+            ref: Taiga ref of the row being updated.
+            metadata_keys: Set of frontmatter keys explicitly present in the
+                source — used to distinguish "omitted" from "explicitly null"
+                per ADR-004's clear semantics.
+            acting_user: Username driving the update (used for the row's
+                modified_date; no separate modified_by column exists on
+                userstories_userstory).
+            last_pushed_at: ISO timestamp from the sidecar for conflict
+                detection.
+            ignore_conflict: If True, skip the modified_date drift check
+                (caller has already prompted the user).
+
+        Raises:
+            TicketMissingError: The ref does not exist on this project.
+            TicketConflictError: Taiga's row was modified after last_pushed_at.
+            FieldClearedError: A previously-set field was omitted without an
+                explicit null.
+        """
+        project_id = self._resolver.resolve_project(story.project)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, modified_date, assigned_to_id, milestone_id"
+                " FROM userstories_userstory WHERE project_id = %s AND ref = %s",
+                (project_id, ref),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise TicketMissingError(
+                f"story #{ref} not found in project '{story.project}'"
+            )
+
+        object_id, taiga_modified, current_assigned_to, current_milestone = row
+
+        if not ignore_conflict:
+            check_taiga_conflict(taiga_modified, parse_taiga_timestamp(last_pushed_at))
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT epic_id FROM epics_relateduserstory WHERE user_story_id = %s",
+                (object_id,),
+            )
+            current_epic = cur.fetchone()
+
+        check_field_cleared("assignee", metadata_keys, current_assigned_to)
+        check_field_cleared("milestone", metadata_keys, current_milestone)
+        check_field_cleared("epic", metadata_keys, current_epic)
+
+        status_id = self._resolve_status(project_id, story.status)
+
+        assigned_to_id: Optional[int] = None
+        if story.assignee is not None:
+            assigned_to_id = self._resolver.resolve_user(story.assignee)
+
+        milestone_id: Optional[int] = None
+        if story.milestone is not None:
+            milestone_id = self._resolver.resolve_milestone(project_id, story.milestone)
+
+        epic_id: Optional[int] = None
+        if story.epic is not None:
+            epic_id = self._resolver.resolve_epic(project_id, story.epic)
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "UPDATE userstories_userstory"
+                " SET subject = %s, description = %s, status_id = %s,"
+                "     assigned_to_id = %s, milestone_id = %s, tags = %s,"
+                "     modified_date = %s, version = version + 1"
+                " WHERE id = %s",
+                (
+                    story.subject,
+                    story.description,
+                    status_id,
+                    assigned_to_id,
+                    milestone_id,
+                    story.tags or [],
+                    now,
+                    object_id,
+                ),
+            )
+
+            cur.execute(
+                "DELETE FROM userstories_userstory_assigned_users"
+                " WHERE userstory_id = %s",
+                (object_id,),
+            )
+
+            if assigned_to_id is not None:
+                cur.execute(
+                    "INSERT INTO userstories_userstory_assigned_users"
+                    " (userstory_id, user_id) VALUES (%s, %s)",
+                    (object_id, assigned_to_id),
+                )
+
+            cur.execute(
+                "DELETE FROM epics_relateduserstory WHERE user_story_id = %s",
+                (object_id,),
+            )
+
+            if epic_id is not None:
+                cur.execute(
+                    'INSERT INTO epics_relateduserstory'
+                    ' (epic_id, user_story_id, "order") VALUES (%s, %s, %s)',
+                    (epic_id, object_id, int(now.timestamp())),
+                )

@@ -1,6 +1,6 @@
 # Planning status
 
-Last updated: 2026-07-08
+Last updated: 2026-07-13
 
 ## What's done
 
@@ -97,17 +97,22 @@ Last updated: 2026-07-08
   now loads the sidecar, refuses to re-push a source file that already has an entry
   (surfaces "already pushed as #<ref> in <project>" — actual update handling is 034's
   job), and records + saves after each successful insert
+- 034 complete: update / upsert for story, task, issue, epic. New writer `update()`
+  method per type. `taigun push` reads the sidecar and dispatches insert-vs-update per
+  file — unchanged content is a no-op with `(unchanged) #<ref>`, an update prints
+  `↺ #<ref>`, a missing-in-Taiga entry prompts to re-insert (default yes), a Taiga
+  modified_date newer than last_pushed_at prompts to overwrite (default no), and
+  identity changes (project or type) error loudly. `--force` skips prompts.
+  Field-removal semantics per ADR-004: dropping a previously-set frontmatter field
+  raises `FieldClearedError` — clear requires an explicit `field: null`. Milestone
+  update is deferred to 035 with a clear error message when re-pushed
 
 ## What's next
 
 - E8 remaining (025, 026, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
   epic-link (025), replacing the `cli_conn` monkeypatch with constructor injection (026),
   CI smoke test against a running Taiga API server (029)
-- E9 remaining (034, 035): update implementation for the four ticket types (034),
-  extension to projects + milestones (035)
-- E9 remaining (033, 034, 035): sidecar state file for source-to-ref mapping (033),
-  update implementation for the four ticket types (034), and update extension to
-  projects + milestones (035)
+- E9 remaining (035): update extension to projects + milestones
 
 ## Key decisions
 

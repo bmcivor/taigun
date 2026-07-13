@@ -1,7 +1,14 @@
+import datetime
 import random
 from typing import Optional
 
 from taigun.db.base import BaseWriter
+from taigun.db.update_helpers import (
+    check_field_cleared,
+    check_taiga_conflict,
+    parse_taiga_timestamp,
+)
+from taigun.exceptions import TicketMissingError
 from taigun.models import Epic
 
 
@@ -66,3 +73,69 @@ class EpicWriter(BaseWriter):
             object_id = cur.fetchone()[0]
 
         return self._allocate_and_set_ref(project_id, object_id)
+
+    def update(
+        self,
+        epic: Epic,
+        ref: int,
+        metadata_keys: set,
+        acting_user: str,
+        last_pushed_at: str,
+        ignore_conflict: bool = False,
+    ) -> None:
+        """Update an existing epic from the parsed model.
+
+        Follows the same semantics as ``StoryWriter.update`` — see that method
+        for the field-clear / conflict / missing-ticket rules. Epic keeps its
+        original ``color`` unless the source explicitly sets one.
+        """
+        project_id = self._resolver.resolve_project(epic.project)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, modified_date, assigned_to_id, color"
+                " FROM epics_epic WHERE project_id = %s AND ref = %s",
+                (project_id, ref),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise TicketMissingError(
+                f"epic #{ref} not found in project '{epic.project}'"
+            )
+
+        object_id, taiga_modified, current_assigned_to, current_color = row
+
+        if not ignore_conflict:
+            check_taiga_conflict(taiga_modified, parse_taiga_timestamp(last_pushed_at))
+
+        check_field_cleared("assignee", metadata_keys, current_assigned_to)
+
+        status_id = self._resolve_status(project_id, epic.status)
+
+        assigned_to_id: Optional[int] = None
+        if epic.assignee is not None:
+            assigned_to_id = self._resolver.resolve_user(epic.assignee)
+
+        color = epic.color if epic.color is not None else current_color
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "UPDATE epics_epic"
+                " SET subject = %s, description = %s, status_id = %s,"
+                "     assigned_to_id = %s, color = %s, tags = %s,"
+                "     modified_date = %s, version = version + 1"
+                " WHERE id = %s",
+                (
+                    epic.subject,
+                    epic.description,
+                    status_id,
+                    assigned_to_id,
+                    color,
+                    epic.tags or [],
+                    now,
+                    object_id,
+                ),
+            )

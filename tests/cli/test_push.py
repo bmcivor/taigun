@@ -1,3 +1,4 @@
+import re
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
@@ -36,6 +37,13 @@ def make_config(tmp_path: Path, profile) -> ConfigManager:
 def patch_config(config: ConfigManager):
     with patch("taigun.cli.ConfigManager", return_value=config):
         yield config
+
+
+def _ref_from_insert_output(output: str) -> int:
+    """Extract the numeric ref from a push insert line (``✓ #<ref> ...``)."""
+    match = re.search(r"#(\d+)", output)
+    assert match is not None, f"expected ref in output: {output!r}"
+    return int(match.group(1))
 
 
 class TestPushParseErrors:
@@ -163,3 +171,136 @@ class TestPushSuccess:
             result = runner.invoke(app, ["push", "--profile", "work", str(ticket)])
 
         assert result.exit_code == 0
+
+
+class TestPushUpsert:
+    def test_re_push_edited_file_updates_instead_of_inserting(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: push a story; edit the same file to change subject; re-push.
+        Expectations: second push emits the "↺ #<ref> ... (updated)" line, no
+            duplicate ticket exists in the DB.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+        ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="First")
+
+        with patch_config(config):
+            first = runner.invoke(app, ["push", str(ticket)])
+        assert first.exit_code == 0
+        ref = _ref_from_insert_output(first.output)
+
+        ticket.write_text(
+            f"---\ntype: story\nproject: {slug}\n---\n\n## Second\n"
+        )
+
+        with patch_config(config):
+            second = runner.invoke(app, ["push", str(ticket)])
+
+        assert second.exit_code == 0
+        assert second.output == f'↺ #{ref} story: "Second" (updated)\n'
+
+        with cli_conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM userstories_userstory"
+                " WHERE project_id = (SELECT id FROM projects_project WHERE slug = %s)",
+                (slug,),
+            )
+            (count,) = cur.fetchone()
+        assert count == 1
+
+    def test_re_push_unchanged_file_is_noop(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: push a story; re-push the same file with no edits.
+        Expectations: second push prints "(unchanged) #<ref>"; DB row's
+            modified_date does not advance.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+        ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Same")
+
+        with patch_config(config):
+            first = runner.invoke(app, ["push", str(ticket)])
+        ref = _ref_from_insert_output(first.output)
+
+        with cli_conn.cursor() as cur:
+            cur.execute(
+                "SELECT modified_date FROM userstories_userstory"
+                " WHERE project_id = (SELECT id FROM projects_project WHERE slug = %s)",
+                (slug,),
+            )
+            (before,) = cur.fetchone()
+
+        with patch_config(config):
+            second = runner.invoke(app, ["push", str(ticket)])
+
+        assert second.exit_code == 0
+        assert second.output == f'(unchanged) #{ref} story: "Same"\n'
+
+        with cli_conn.cursor() as cur:
+            cur.execute(
+                "SELECT modified_date FROM userstories_userstory"
+                " WHERE project_id = (SELECT id FROM projects_project WHERE slug = %s)",
+                (slug,),
+            )
+            (after,) = cur.fetchone()
+        assert before == after
+
+    def test_re_push_with_changed_type_errors(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: push a story; rewrite the file with type: epic; re-push.
+        Expectations: exit 1; error message about identity change.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+        ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="X")
+
+        with patch_config(config):
+            runner.invoke(app, ["push", str(ticket)])
+
+        ticket.write_text(
+            f"---\ntype: epic\nproject: {slug}\n---\n\n## X\n"
+        )
+
+        with patch_config(config):
+            result = runner.invoke(app, ["push", str(ticket)])
+
+        assert result.exit_code == 1
+        assert result.output == (
+            "✗ ticket.md: type changed from 'story' to 'epic' — "
+            "remove the sidecar entry to push as a new ticket\n"
+        )
+
+    def test_milestone_re_push_errors_with_deferred_message(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: push a milestone; re-push the same file.
+        Expectations: exit 1; error indicates milestone update deferred to 035.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+        ticket = tmp_path / "sprint.md"
+        ticket.write_text(
+            f"---\ntype: milestone\nproject: {slug}\n"
+            f"estimated_start: 2026-08-01\nestimated_finish: 2026-08-14\n"
+            f"---\n\n## Sprint 1\n"
+        )
+
+        with patch_config(config):
+            first = runner.invoke(app, ["push", str(ticket)])
+        assert first.exit_code == 0
+
+        with patch_config(config):
+            second = runner.invoke(app, ["push", str(ticket)])
+
+        assert second.exit_code == 1
+        assert second.output == (
+            "✗ sprint.md: milestone update is deferred to ticket 035; "
+            "edit in Taiga UI for now\n"
+        )
