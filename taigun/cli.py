@@ -12,8 +12,14 @@ from taigun.db.milestone import MilestoneWriter
 from taigun.db.project import ProjectCreator, ProjectExistsError
 from taigun.db.story import StoryWriter
 from taigun.db.task import TaskWriter
-from taigun.exceptions import ResolveError
+from taigun.exceptions import (
+    IdentityChangeError,
+    ResolveError,
+    TicketConflictError,
+    TicketMissingError,
+)
 from taigun.parsers.file import FileParser
+from taigun.parsers.frontmatter import FrontmatterParser
 from taigun.resolver import Resolver
 from taigun.state import StateFile, hash_file, locate_sidecar
 
@@ -90,17 +96,25 @@ def push(
     files: List[Path] = typer.Argument(..., help="Ticket file(s) to push."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Resolve FKs but do not insert."),
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+    force: bool = typer.Option(
+        False, "--force",
+        help="Skip conflict / missing-ticket prompts (overwrite / re-insert automatically)."
+    ),
 ) -> None:
-    """Parse and push one or more ticket files to Taiga.
+    """Parse and push (or update) one or more ticket files to Taiga.
 
     On non-dry-run pushes, the sidecar (``.taigun/state.yaml``) is located by
     walking up from the first source file's directory. All source files are
-    expected to live in the same repo. Each successful insert is recorded in
-    the sidecar. Re-pushing a source file that already has an entry raises —
-    update handling arrives in 034.
+    expected to live in the same repo.
+
+    Per ADR-004: if the sidecar has an entry for a source file, push dispatches
+    to update; otherwise it inserts. Unchanged files (matching content hash)
+    are a no-op. Modified-date drift and missing-in-Taiga cases prompt the user
+    unless ``--force`` is set.
     """
     config = ConfigManager().load(profile)
     parser = FileParser()
+    fm_parser = FrontmatterParser()
     manager = ConnectionManager(config)
     any_failed = False
 
@@ -117,27 +131,20 @@ def push(
             ticket_type = type(ticket).__name__.lower()
             writer_class = _WRITERS[ticket_type]
 
-            if state is not None:
-                existing = state.find(path)
-                if existing is not None:
-                    raise RuntimeError(
-                        f"already pushed as #{existing.ref} in project "
-                        f"'{existing.project}'; taigun update not yet available "
-                        f"(remove the entry from {state.path} to force a fresh push)"
-                    )
+            metadata, _ = fm_parser.parse(Path(path).read_text())
+            metadata_keys = set(metadata.keys())
 
-            with manager.connect(dry_run=dry_run) as conn:
-                resolver = Resolver(conn)
-                writer = writer_class(conn, resolver)
-                ref = writer.write(ticket, config.acting_user)
+            entry = state.find(path) if state is not None else None
 
-            if state is not None:
-                state.record(
-                    path,
-                    project=ticket.project,
-                    ref=ref,
-                    ticket_type=ticket_type,
-                    content_hash=hash_file(path),
+            if entry is None or dry_run:
+                _handle_insert(
+                    path, ticket, ticket_type, writer_class,
+                    manager, config, state, dry_run,
+                )
+            else:
+                _handle_upsert(
+                    path, ticket, ticket_type, writer_class,
+                    metadata_keys, entry, manager, config, state, force,
                 )
 
         except Exception as e:
@@ -145,18 +152,135 @@ def push(
             any_failed = True
             continue
 
-        if dry_run:
-            typer.echo(f"~ {ticket_type}: \"{ticket.subject}\"")
-        elif ticket_type == "milestone":
-            typer.echo(f"✓ {ticket_type}: \"{ticket.subject}\"")
-        else:
-            typer.echo(f"✓ #{ref} {ticket_type}: \"{ticket.subject}\"")
-
     if state is not None:
         state.save()
 
     if any_failed:
         raise typer.Exit(code=1)
+
+
+def _handle_insert(
+    path: Path,
+    ticket,
+    ticket_type: str,
+    writer_class,
+    manager: ConnectionManager,
+    config: Profile,
+    state: Optional[StateFile],
+    dry_run: bool,
+) -> None:
+    """Insert a new ticket and record it in the sidecar."""
+    with manager.connect(dry_run=dry_run) as conn:
+        resolver = Resolver(conn)
+        writer = writer_class(conn, resolver)
+        ref = writer.write(ticket, config.acting_user)
+
+    if state is not None and not dry_run:
+        state.record(
+            path,
+            project=ticket.project,
+            ref=ref,
+            ticket_type=ticket_type,
+            content_hash=hash_file(path),
+        )
+
+    if dry_run:
+        typer.echo(f"~ {ticket_type}: \"{ticket.subject}\"")
+    elif ticket_type == "milestone":
+        typer.echo(f"✓ {ticket_type}: \"{ticket.subject}\"")
+    else:
+        typer.echo(f"✓ #{ref} {ticket_type}: \"{ticket.subject}\"")
+
+
+def _handle_upsert(
+    path: Path,
+    ticket,
+    ticket_type: str,
+    writer_class,
+    metadata_keys: set,
+    entry,
+    manager: ConnectionManager,
+    config: Profile,
+    state: StateFile,
+    force: bool,
+) -> None:
+    """Update an existing ticket (identified via the sidecar entry) or, on a
+    missing-in-Taiga prompt confirmation, re-insert it.
+    """
+    if entry.project != ticket.project:
+        raise IdentityChangeError(
+            f"project changed from '{entry.project}' to '{ticket.project}' — "
+            f"remove the sidecar entry to push as a new ticket"
+        )
+    if entry.ticket_type != ticket_type:
+        raise IdentityChangeError(
+            f"type changed from '{entry.ticket_type}' to '{ticket_type}' — "
+            f"remove the sidecar entry to push as a new ticket"
+        )
+
+    if ticket_type == "milestone":
+        raise NotImplementedError(
+            "milestone update is deferred to ticket 035; edit in Taiga UI for now"
+        )
+
+    current_hash = hash_file(path)
+    if current_hash == entry.content_hash:
+        typer.echo(f"(unchanged) #{entry.ref} {ticket_type}: \"{ticket.subject}\"")
+        return
+
+    with manager.connect() as conn:
+        resolver = Resolver(conn)
+        writer = writer_class(conn, resolver)
+
+        try:
+            writer.update(
+                ticket, entry.ref, metadata_keys,
+                config.acting_user, entry.last_pushed_at,
+            )
+
+        except TicketConflictError as e:
+            if not force and not typer.confirm(
+                f"Taiga row for #{entry.ref} was modified at "
+                f"{e.taiga_modified_date} (after last push). Overwrite?",
+                default=False,
+            ):
+                typer.echo(f"↷ #{entry.ref} {ticket_type}: skipped (Taiga was edited)")
+                return
+
+            writer.update(
+                ticket, entry.ref, metadata_keys,
+                config.acting_user, entry.last_pushed_at,
+                ignore_conflict=True,
+            )
+
+        except TicketMissingError as e:
+            if not force and not typer.confirm(
+                f"{e}. Re-insert as a new ticket?",
+                default=True,
+            ):
+                typer.echo(f"↷ {ticket_type}: skipped (not in Taiga, user declined re-insert)")
+                return
+
+            new_ref = writer.write(ticket, config.acting_user)
+
+            state.record(
+                path,
+                project=ticket.project,
+                ref=new_ref,
+                ticket_type=ticket_type,
+                content_hash=current_hash,
+            )
+            typer.echo(f"✓ #{new_ref} {ticket_type}: \"{ticket.subject}\" (re-inserted)")
+            return
+
+    state.record(
+        path,
+        project=ticket.project,
+        ref=entry.ref,
+        ticket_type=ticket_type,
+        content_hash=current_hash,
+    )
+    typer.echo(f"↺ #{entry.ref} {ticket_type}: \"{ticket.subject}\" (updated)")
 
 
 @projects_app.command("create")

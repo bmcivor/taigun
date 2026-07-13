@@ -1,6 +1,13 @@
+import datetime
 from typing import Optional
 
 from taigun.db.base import BaseWriter
+from taigun.db.update_helpers import (
+    check_field_cleared,
+    check_taiga_conflict,
+    parse_taiga_timestamp,
+)
+from taigun.exceptions import TicketMissingError
 from taigun.models import Task
 
 
@@ -71,3 +78,77 @@ class TaskWriter(BaseWriter):
             object_id = cur.fetchone()[0]
 
         return self._allocate_and_set_ref(project_id, object_id)
+
+    def update(
+        self,
+        task: Task,
+        ref: int,
+        metadata_keys: set,
+        acting_user: str,
+        last_pushed_at: str,
+        ignore_conflict: bool = False,
+    ) -> None:
+        """Update an existing task from the parsed model.
+
+        Follows the same semantics as ``StoryWriter.update`` — see that method
+        for the field-clear / conflict / missing-ticket rules.
+        """
+        project_id = self._resolver.resolve_project(task.project)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, modified_date, assigned_to_id, milestone_id, user_story_id"
+                " FROM tasks_task WHERE project_id = %s AND ref = %s",
+                (project_id, ref),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise TicketMissingError(
+                f"task #{ref} not found in project '{task.project}'"
+            )
+
+        object_id, taiga_modified, current_assigned_to, current_milestone, current_parent = row
+
+        if not ignore_conflict:
+            check_taiga_conflict(taiga_modified, parse_taiga_timestamp(last_pushed_at))
+
+        check_field_cleared("assignee", metadata_keys, current_assigned_to)
+        check_field_cleared("milestone", metadata_keys, current_milestone)
+        check_field_cleared("parent", metadata_keys, current_parent)
+
+        status_id = self._resolve_status(project_id, task.status)
+
+        assigned_to_id: Optional[int] = None
+        if task.assignee is not None:
+            assigned_to_id = self._resolver.resolve_user(task.assignee)
+
+        milestone_id: Optional[int] = None
+        if task.milestone is not None:
+            milestone_id = self._resolver.resolve_milestone(project_id, task.milestone)
+
+        user_story_id: Optional[int] = None
+        if task.parent is not None:
+            user_story_id = self._resolver.resolve_story(project_id, task.parent)
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "UPDATE tasks_task"
+                " SET subject = %s, description = %s, status_id = %s,"
+                "     assigned_to_id = %s, milestone_id = %s, user_story_id = %s,"
+                "     tags = %s, modified_date = %s, version = version + 1"
+                " WHERE id = %s",
+                (
+                    task.subject,
+                    task.description,
+                    status_id,
+                    assigned_to_id,
+                    milestone_id,
+                    user_story_id,
+                    task.tags or [],
+                    now,
+                    object_id,
+                ),
+            )

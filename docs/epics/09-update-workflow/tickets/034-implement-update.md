@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+status: Done
 ---
 
 ## 34. Implement taigun update / upsert

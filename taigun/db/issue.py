@@ -1,6 +1,13 @@
+import datetime
 from typing import Optional
 
 from taigun.db.base import BaseWriter
+from taigun.db.update_helpers import (
+    check_field_cleared,
+    check_taiga_conflict,
+    parse_taiga_timestamp,
+)
+from taigun.exceptions import TicketMissingError
 from taigun.models import Issue
 
 
@@ -69,3 +76,79 @@ class IssueWriter(BaseWriter):
             object_id = cur.fetchone()[0]
 
         return self._allocate_and_set_ref(project_id, object_id)
+
+    def update(
+        self,
+        issue: Issue,
+        ref: int,
+        metadata_keys: set,
+        acting_user: str,
+        last_pushed_at: str,
+        ignore_conflict: bool = False,
+    ) -> None:
+        """Update an existing issue from the parsed model.
+
+        Follows the same semantics as ``StoryWriter.update`` — see that method
+        for the field-clear / conflict / missing-ticket rules. Issue also
+        supports ``priority``, ``issue_type``, and ``severity``.
+        """
+        project_id = self._resolver.resolve_project(issue.project)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, modified_date, assigned_to_id, milestone_id"
+                " FROM issues_issue WHERE project_id = %s AND ref = %s",
+                (project_id, ref),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise TicketMissingError(
+                f"issue #{ref} not found in project '{issue.project}'"
+            )
+
+        object_id, taiga_modified, current_assigned_to, current_milestone = row
+
+        if not ignore_conflict:
+            check_taiga_conflict(taiga_modified, parse_taiga_timestamp(last_pushed_at))
+
+        check_field_cleared("assignee", metadata_keys, current_assigned_to)
+        check_field_cleared("milestone", metadata_keys, current_milestone)
+
+        status_id = self._resolve_status(project_id, issue.status)
+        priority_id = self._resolver.resolve_priority(project_id, issue.priority)
+        type_id = self._resolver.resolve_issue_type(project_id, issue.issue_type)
+        severity_id = self._resolver.resolve_severity(project_id, issue.severity)
+
+        assigned_to_id: Optional[int] = None
+        if issue.assignee is not None:
+            assigned_to_id = self._resolver.resolve_user(issue.assignee)
+
+        milestone_id: Optional[int] = None
+        if issue.milestone is not None:
+            milestone_id = self._resolver.resolve_milestone(project_id, issue.milestone)
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "UPDATE issues_issue"
+                " SET subject = %s, description = %s, status_id = %s,"
+                "     priority_id = %s, type_id = %s, severity_id = %s,"
+                "     assigned_to_id = %s, milestone_id = %s, tags = %s,"
+                "     modified_date = %s, version = version + 1"
+                " WHERE id = %s",
+                (
+                    issue.subject,
+                    issue.description,
+                    status_id,
+                    priority_id,
+                    type_id,
+                    severity_id,
+                    assigned_to_id,
+                    milestone_id,
+                    issue.tags or [],
+                    now,
+                    object_id,
+                ),
+            )
