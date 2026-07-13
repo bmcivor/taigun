@@ -113,12 +113,18 @@ Last updated: 2026-07-13
   `MilestoneConflictError`, `ProjectMissingError`). `check_taiga_conflict` /
   `check_field_cleared` helpers gained an exception-class parameter so each entity
   raises its own type. E9 complete
+- 026 complete: `ConnectionManager.__init__` gained a keyword-only `_connection_factory`
+  seam (defaults to `psycopg2.connect`, production behaviour unchanged); `cli_conn`
+  fixture rewritten to patch `taigun.cli.ConnectionManager` with a subclass that
+  injects a savepoint-scoped factory, matching the `ConfigManager` patching pattern;
+  `tests/db/test_connection.py` rewritten to pass `_connection_factory=` directly
+  instead of `patch("...psycopg2.connect", ...)`. No `psycopg2.connect` monkeypatching
+  anywhere in the test suite
 
 ## What's next
 
-- E8 remaining (025, 026, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
-  epic-link (025), replacing the `cli_conn` monkeypatch with constructor injection (026),
-  CI smoke test against a running Taiga API server (029)
+- E8 remaining (025, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
+  epic-link (025), CI smoke test against a running Taiga API server (029)
 
 ## Key decisions
 
