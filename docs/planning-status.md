@@ -123,8 +123,17 @@ Last updated: 2026-07-13
 
 ## What's next
 
-- E8 remaining (025, 029): real-Taiga dog-food for tasks/issues/tags/parent-link/
-  epic-link (025), CI smoke test against a running Taiga API server (029)
+- E8 remaining (025): real-Taiga dog-food for tasks/issues/tags/parent-link/
+  epic-link. Includes an API-render check per pushed item — this is the
+  coverage 029 was going to provide
+
+## Postponed
+
+- 029 (CI smoke test against a running Taiga API server): spinning up a
+  `taiga-back` container per CI run is too much infra for the observed bug
+  rate (two NULL-field serializer crashes in the whole v1.0 cycle, both
+  caught by eyeballing the lab). Coverage folded into 025. Revisit if this
+  class of bug starts appearing between dog-food passes
 
 ## Key decisions
 

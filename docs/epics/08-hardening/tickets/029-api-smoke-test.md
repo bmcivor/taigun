@@ -1,9 +1,18 @@
 ---
 type: story
 project: taigun
+status: Postponed
 ---
 
 ## 29. CI smoke test against a running Taiga API server
+
+> **Postponed 2026-07-13.** Spinning up a `taiga-back` container per CI run is
+> too much infra for the observed bug rate (two NULL-field serializer crashes
+> in the whole v1.0 cycle, both caught by eyeballing the lab). Coverage moved
+> into 025 as an "API-render check per pushed item" step. Revisit if the class
+> of bug starts appearing between dog-food passes rather than being caught by
+> them.
+
 
 **As a** taigun developer
 **I want** CI to push tickets to a running Taiga back container and hit the Taiga API
