@@ -1,3 +1,4 @@
+import datetime
 import re
 import uuid
 from contextlib import contextmanager
@@ -276,11 +277,12 @@ class TestPushUpsert:
             "remove the sidecar entry to push as a new ticket\n"
         )
 
-    def test_milestone_re_push_errors_with_deferred_message(
+    def test_milestone_re_push_unchanged_is_noop(
         self, tmp_path, test_db_profile, cli_conn
     ):
-        """Setup: push a milestone; re-push the same file.
-        Expectations: exit 1; error indicates milestone update deferred to 035.
+        """Setup: push a milestone; re-push the same file with no edits.
+        Expectations: second push prints '(unchanged) milestone: "Sprint 1"';
+            DB row unchanged.
         """
         slug = unique_slug()
         ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
@@ -299,8 +301,53 @@ class TestPushUpsert:
         with patch_config(config):
             second = runner.invoke(app, ["push", str(ticket)])
 
-        assert second.exit_code == 1
-        assert second.output == (
-            "✗ sprint.md: milestone update is deferred to ticket 035; "
-            "edit in Taiga UI for now\n"
+        assert second.exit_code == 0
+        assert second.output == '(unchanged) milestone: "Sprint 1"\n'
+
+    def test_milestone_re_push_edited_file_updates(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: push a milestone; edit its dates and closed flag; re-push.
+        Expectations: '↺ milestone: "Sprint 1" (updated)'; DB reflects the
+            new dates and closed flag.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+        ticket = tmp_path / "sprint.md"
+        ticket.write_text(
+            f"---\ntype: milestone\nproject: {slug}\n"
+            f"estimated_start: 2026-08-01\nestimated_finish: 2026-08-14\n"
+            f"---\n\n## Sprint 1\n"
+        )
+
+        with patch_config(config):
+            runner.invoke(app, ["push", str(ticket)])
+
+        ticket.write_text(
+            f"---\ntype: milestone\nproject: {slug}\n"
+            f"estimated_start: 2026-08-02\nestimated_finish: 2026-08-15\n"
+            f"closed: true\n"
+            f"---\n\n## Sprint 1\n"
+        )
+
+        with patch_config(config):
+            second = runner.invoke(app, ["push", str(ticket)])
+
+        assert second.exit_code == 0
+        assert second.output == '↺ milestone: "Sprint 1" (updated)\n'
+
+        with cli_conn.cursor() as cur:
+            cur.execute(
+                "SELECT estimated_start, estimated_finish, closed"
+                " FROM milestones_milestone"
+                " WHERE project_id = (SELECT id FROM projects_project WHERE slug = %s)",
+                (slug,),
+            )
+            row = cur.fetchone()
+
+        assert row == (
+            datetime.date(2026, 8, 2),
+            datetime.date(2026, 8, 15),
+            True,
         )

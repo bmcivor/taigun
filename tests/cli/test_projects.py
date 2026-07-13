@@ -97,3 +97,90 @@ class TestProjectsCreate:
             )
 
         assert result.exit_code == 0
+
+
+class TestProjectsUpdate:
+    def test_updates_name_and_description(self, tmp_path, test_db_profile, cli_conn):
+        """Setup: project created; run projects update with --name and
+            --description.
+        Expectations: exit 0; DB row reflects both new values; success line.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Original", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+
+        with patch_config(config):
+            result = runner.invoke(
+                app,
+                ["projects", "update", slug,
+                 "--name", "Renamed",
+                 "--description", "New body"],
+            )
+
+        assert result.exit_code == 0
+        assert result.output == f"Updated project '{slug}'\n"
+
+        with cli_conn.cursor() as cur:
+            cur.execute(
+                "SELECT name, description FROM projects_project WHERE slug = %s",
+                (slug,),
+            )
+            row = cur.fetchone()
+
+        assert row == ("Renamed", "New body")
+
+    def test_updates_only_provided_field(self, tmp_path, test_db_profile, cli_conn):
+        """Setup: project has name='Original' and description=''; update with
+            --description only.
+        Expectations: name stays 'Original'; description becomes 'Just docs'.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Original", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+
+        with patch_config(config):
+            result = runner.invoke(
+                app,
+                ["projects", "update", slug, "--description", "Just docs"],
+            )
+
+        assert result.exit_code == 0
+
+        with cli_conn.cursor() as cur:
+            cur.execute(
+                "SELECT name, description FROM projects_project WHERE slug = %s",
+                (slug,),
+            )
+            row = cur.fetchone()
+
+        assert row == ("Original", "Just docs")
+
+    def test_no_flags_exits_nonzero(self, tmp_path, test_db_profile, cli_conn):
+        """Setup: project exists but user runs update with no flags.
+        Expectations: exit 1; error line explains that nothing was passed.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Original", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+
+        with patch_config(config):
+            result = runner.invoke(app, ["projects", "update", slug])
+
+        assert result.exit_code == 1
+        assert result.output == "Nothing to update: pass --name and/or --description.\n"
+
+    def test_unknown_slug_exits_nonzero(self, tmp_path, test_db_profile, cli_conn):
+        """Setup: no project with that slug.
+        Expectations: exit 1; error names the missing slug.
+        """
+        slug = unique_slug()
+        config = make_config(tmp_path, test_db_profile)
+
+        with patch_config(config):
+            result = runner.invoke(
+                app,
+                ["projects", "update", slug, "--name", "x"],
+            )
+
+        assert result.exit_code == 1
+        assert result.output == f"project with slug '{slug}' not found\n"
