@@ -36,6 +36,11 @@ to push one of each, into a real Taiga, and look at the UI.
 - Any bugs surfaced by the above are fixed (same pattern as the v1.0 fixes:
   populate missing fields in the writer, patch the lab data if needed, update tests)
 - Outcome documented — either "all green" or "fixed N bugs, listed here"
+- **API-render check per pushed item**: after each push, hit the Taiga API for
+  the created resource (project, story, task, issue, epic) and confirm 200 OK
+  — this is the coverage that 029 was going to buy with a full back container.
+  Postponing 029 in favour of doing this here means the dog-food pass is the
+  only line of defence against NULL-field serializer crashes, so don't skip it
 
 ### Dependencies
 
