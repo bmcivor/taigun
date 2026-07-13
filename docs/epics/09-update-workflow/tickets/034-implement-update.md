@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+assignee: bmcivor
 status: Done
 ---
 

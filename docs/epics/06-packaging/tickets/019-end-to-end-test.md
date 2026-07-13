@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+assignee: bmcivor
 ---
 
 ## 19. End-to-end test against vertex-studio Taiga

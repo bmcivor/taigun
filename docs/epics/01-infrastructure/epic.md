@@ -1,6 +1,7 @@
 ---
 type: epic
 project: taigun
+assignee: bmcivor
 status: Done
 ---
 

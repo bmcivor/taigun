@@ -1,6 +1,7 @@
 ---
 type: story
 project: taigun
+assignee: bmcivor
 ---
 
 ## 25. Complete dog-food coverage for tasks, issues, and linkages

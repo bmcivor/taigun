@@ -1,7 +1,7 @@
 ---
 type: story
 project: taigun
-status: Postponed
+assignee: bmcivor
 ---
 
 ## 29. CI smoke test against a running Taiga API server

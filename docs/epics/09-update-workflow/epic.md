@@ -1,6 +1,7 @@
 ---
 type: epic
 project: taigun
+assignee: bmcivor
 ---
 
 ## E9 — Update workflow
