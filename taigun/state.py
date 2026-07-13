@@ -19,6 +19,7 @@ import yaml
 
 SIDECAR_DIR_NAME = ".taigun"
 SIDECAR_FILE_NAME = "state.yaml"
+REPO_MARKER_NAME = ".git"
 
 
 class StateError(Exception):
@@ -200,12 +201,19 @@ class StateFile:
 def locate_sidecar(start: Path) -> Path:
     """Find the sidecar file, walking up from a starting directory.
 
-    The starting directory is typically the CWD at push time. This walks up
-    looking for a `.taigun/` directory (git-style discovery). If none is
-    found, defaults to `start/.taigun/state.yaml` — that path is created on
-    first save.
+    Discovery order (git-style walk-up from ``start`` towards the filesystem
+    root):
+
+    1. Return the first `.taigun/state.yaml` that already exists.
+    2. Otherwise, return `<repo-root>/.taigun/state.yaml` where ``repo-root``
+       is the nearest ancestor containing a `.git/` directory. The sidecar
+       itself doesn't exist yet — it's created on first save.
+    3. Otherwise, raise ``StateError``. Placing the sidecar wherever the
+       walk-up bottomed out would silently anchor it to the wrong root and
+       break any subsequent push of files from a sibling subtree (E10 036).
     """
     start = Path(start).resolve()
+
     current = start
     while True:
         candidate = current / SIDECAR_DIR_NAME / SIDECAR_FILE_NAME
@@ -214,7 +222,20 @@ def locate_sidecar(start: Path) -> Path:
         if current.parent == current:
             break
         current = current.parent
-    return start / SIDECAR_DIR_NAME / SIDECAR_FILE_NAME
+
+    current = start
+    while True:
+        if (current / REPO_MARKER_NAME).exists():
+            return current / SIDECAR_DIR_NAME / SIDECAR_FILE_NAME
+        if current.parent == current:
+            break
+        current = current.parent
+
+    raise StateError(
+        f"No .taigun/ or .git/ found walking up from {start}. Create "
+        f".taigun/ at your intended repo root before pushing "
+        f"(e.g. `mkdir .taigun` next to your .git directory)."
+    )
 
 
 def hash_file(path: Path) -> str:

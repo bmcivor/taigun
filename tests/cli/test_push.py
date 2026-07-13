@@ -29,6 +29,11 @@ def write_ticket(tmp_path: Path, name: str, ticket_type: str, project_slug: str,
 
 
 def make_config(tmp_path: Path, profile) -> ConfigManager:
+    """Save ``profile`` under ``tmp_path/config.toml`` and mark ``tmp_path``
+    as a repo root so ``locate_sidecar`` anchors the sidecar under it
+    instead of walking up out of the temp tree.
+    """
+    (tmp_path / ".git").mkdir(exist_ok=True)
     config = ConfigManager(path=tmp_path / "config.toml")
     config.save(profile, name=None)
     return config
@@ -155,6 +160,7 @@ class TestPushSuccess:
         """
         slug = unique_slug()
         ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        (tmp_path / ".git").mkdir()
         config = ConfigManager(path=tmp_path / "config.toml")
         bad_default = Profile(
             host="nonexistent-host",
