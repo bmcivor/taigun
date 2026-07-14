@@ -33,6 +33,37 @@ written to `~/.config/taigun/config.toml`.
 The database needs to be reachable from your machine — the recommended approach is to
 expose the Postgres port only on a VPN interface (e.g. Tailscale).
 
+### Where to put your tickets
+
+Ticket source files are yours to organise — taigun locates them via the paths you pass
+to `push`. The recommended layout keeps them **outside your product source repos**, in
+a per-user directory:
+
+```
+~/Tickets/
+├── .taigun/state.yaml          <-- one sidecar tracks every project
+├── project-a/
+│   └── docs/epics/NN-<slug>/{epic.md, tickets/NNN-<slug>.md}
+└── project-b/
+    └── docs/epics/...
+```
+
+Why not in the product repo:
+
+- Every `status:` flip, every new ticket, every completion becomes a commit in the
+  product's history alongside actual code changes.
+- The sidecar (`.taigun/state.yaml`) is per-user tracking state — committing it to a
+  shared repo produces meaningless merge conflicts.
+
+The sidecar is anchored automatically: `taigun push` walks up from the source file's
+directory looking for an existing `.taigun/state.yaml`, then for `.git/` as a
+repo-root marker. For a brand-new directory that has neither, seed the sidecar
+manually so taigun knows where to put it:
+
+```
+mkdir -p ~/Tickets/.taigun && touch ~/Tickets/.taigun/state.yaml
+```
+
 ### Multiple profiles
 
 If you run more than one Taiga instance:
@@ -55,26 +86,30 @@ The default profile is used when `--profile` is not given.
 ### Pushing tickets
 
 ```
-taigun push ticket.md               # push a single ticket
-taigun push tickets/*.md            # push multiple tickets
-taigun push --dry-run ticket.md     # parse and resolve, do not insert
+taigun push ticket.md                       # push a single ticket
+taigun push tickets/*.md                    # push multiple tickets
+taigun push --dry-run ticket.md             # parse and resolve, do not insert
 ```
 
-Per-file output on success:
+Per-file output:
 
 ```
-✓ #42 story: "Title of the ticket"
+✓ #42 story: "Title"                        # newly inserted
+(unchanged) #42 story: "Title"              # sidecar hash matches, no-op
+↺ #42 story: "Title" (updated)              # content changed, updated in Taiga
+↷ #42 story: skipped (Taiga was edited)     # conflict — re-run with --force to overwrite
+~ story: "Title"                            # dry-run: would push
 ```
 
-In `--dry-run` mode, the FK lookups still run against the database (so any unresolved
-references are caught) but nothing is inserted:
-
-```
-~ story: "Title of the ticket"
-```
+Once a ticket has been pushed, editing the source file and re-running `taigun push`
+updates the same Taiga row (looked up via the sidecar). Dropping a previously-set
+frontmatter field errors — clearing requires an explicit `field: null` so accidental
+deletions are loud.
 
 If a file fails (parse error, unknown project, missing user, etc.) the error is printed
 and the next file is attempted. Exit code is `0` if all succeeded, `1` if any failed.
+
+`--force` skips conflict / missing-in-Taiga prompts (overwrite / re-insert automatically).
 
 ### Listing
 
