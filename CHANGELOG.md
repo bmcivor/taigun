@@ -1,6 +1,74 @@
 # CHANGELOG
 
 
+## v1.1.0 (2026-07-14)
+
+### Bug Fixes
+
+- **027**: Clean up docs in tests and document usage
+  ([`ec4b473`](https://github.com/bmcivor/taigun/commit/ec4b473d82d5cb88dc9b17d2c7061b3599bea9ba))
+
+- **033**: Add in sidecar for updating existing tickets
+  ([`46a6558`](https://github.com/bmcivor/taigun/commit/46a655822a3a2a064e36e672253e4d02979aa3e9))
+
+This is a bit of a bad design to be honest. Caught about halfway through that this was
+  unnecessarily, over complicated as a design.
+
+But we can roll with it for now.
+
+- **036**: Fix sidecare default path so it is more robust
+  ([`03714d9`](https://github.com/bmcivor/taigun/commit/03714d9c872161d3a0d6acf80460aaff12387ab9))
+
+### Chores
+
+- General docs and planning update
+  ([`f0e9a94`](https://github.com/bmcivor/taigun/commit/f0e9a945a837cb7d833f5ad8b948192b1406b470))
+
+- Update assignees on existing tickets
+  ([`83b4c32`](https://github.com/bmcivor/taigun/commit/83b4c32cd0cc7d8a1b24695c3101b82aca42c5b1))
+
+- Update docs with decision to postpone insane claude design for CI
+  ([`8d7932c`](https://github.com/bmcivor/taigun/commit/8d7932ca6cde9240b5d5d9dbc825aff69f755341))
+
+- Update documentation statuses and workflow definitions
+  ([`48af6b6`](https://github.com/bmcivor/taigun/commit/48af6b6461313288b0fe9401eba86cca102a5cf0))
+
+- Update uv lock file version to match correct version
+  ([`9c83959`](https://github.com/bmcivor/taigun/commit/9c83959345e17a80b5040be8e3caa3afefa74ea5))
+
+- **926**: Clean up overzealous monkeypatching in connections
+  ([`64af59c`](https://github.com/bmcivor/taigun/commit/64af59cb2377ed0b48bc5dc85d4cf24913bab83d))
+
+### Features
+
+- Add in planning for follow up hardening of app
+  ([`f16764d`](https://github.com/bmcivor/taigun/commit/f16764dabbd909f2a44ce6536e82cff214951fcf))
+
+- Basic plan on hardening and update strategies
+  ([`f3f1f19`](https://github.com/bmcivor/taigun/commit/f3f1f193d6ee39721f7434a98af9c607e9925911))
+
+- Update planning for updating mechanisms
+  ([`275a48f`](https://github.com/bmcivor/taigun/commit/275a48f3b86f8ddb7caac7398a95c1488fd47c8d))
+
+- **028**: Add in milestone writer
+  ([`0acec79`](https://github.com/bmcivor/taigun/commit/0acec791c3e1ef50233e460ef0cd7d1370ddcc36))
+
+- **031**: Apply various persistent bugs from dogfooding finds
+  ([`0d695a8`](https://github.com/bmcivor/taigun/commit/0d695a86be3225f0aa3763f1724afd988fd851fc))
+
+- **032**: Complete ADR for update workflow
+  ([`6b59fbd`](https://github.com/bmcivor/taigun/commit/6b59fbdb442d70d2c77a72946e98ede4cb7384cb))
+
+- **034**: Add in update and upsert functionality to all db types
+  ([`975e4f7`](https://github.com/bmcivor/taigun/commit/975e4f77b7c49fa2bf5ce6a2575a4e10fd2aafac))
+
+- **035**: Update projects and milestones functionality
+  ([`6426ef4`](https://github.com/bmcivor/taigun/commit/6426ef445f659bbe4f65d1b0d0abc4bfc2b38db6))
+
+- **30**: Include investigation results from dog fooding
+  ([`04c84c6`](https://github.com/bmcivor/taigun/commit/04c84c62e01d8f8a1a5f4da4b13e6689b5f23baf))
+
+
 ## v1.0.0 (2026-05-15)
 
 ### Bug Fixes
