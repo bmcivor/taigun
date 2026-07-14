@@ -104,35 +104,51 @@ class Resolver:
 
         return row[0]
 
-    def resolve_status(self, project_id: int, name: str, ticket_type: str) -> int:
-        """Look up a status ID by name for the given project and ticket type.
+    def resolve_status(
+        self, project_id: int, name: Optional[str], ticket_type: str
+    ) -> int:
+        """Look up a status ID by name, falling back to the project default.
+
+        Matching is case-insensitive. If ``name`` is None or no match is
+        found, returns the project's default status for the given ticket
+        type. A warning is logged only when a name was given but not found —
+        symmetric with ``resolve_priority`` / ``resolve_issue_type`` /
+        ``resolve_severity`` (see E10 037).
 
         Args:
             project_id: Project ID.
-            name: Status name (case-insensitive).
+            name: Status name, or None to use the project default directly.
             ticket_type: One of 'story', 'task', 'issue', 'epic'.
 
         Returns:
             Status ID.
 
         Raises:
-            ResolveError: If the status is not found or ticket_type is invalid.
+            ResolveError: If ticket_type is invalid or no default status
+                exists for the project.
         """
         table = STATUS_TABLES.get(ticket_type)
         if table is None:
             raise ResolveError(f"Unknown ticket type '{ticket_type}'")
 
-        with self._conn.cursor() as cur:
-            cur.execute(
-                f"SELECT id FROM {table} WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
-                (project_id, name),
+        if name is not None:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT id FROM {table}"
+                    f" WHERE project_id = %s AND LOWER(name) = LOWER(%s)",
+                    (project_id, name),
+                )
+                row = cur.fetchone()
+
+            if row is not None:
+                return row[0]
+
+            logger.warning(
+                "Status '%s' not found for project %d (%s), falling back to default",
+                name, project_id, ticket_type,
             )
-            row = cur.fetchone()
 
-        if row is None:
-            raise ResolveError(f"Status '{name}' not found for project {project_id}")
-
-        return row[0]
+        return self.resolve_default_status(project_id, ticket_type)
 
     def resolve_priority(self, project_id: int, name: Optional[str]) -> int:
         """Look up a priority ID by name, falling back to the project default.

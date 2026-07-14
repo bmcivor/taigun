@@ -94,14 +94,42 @@ class TestResolveStatus:
 
         assert isinstance(status_id, int) and status_id > 0
 
-    def test_not_found_raises(self, real_conn):
-        """Setup: project exists; no status named 'Bogus'.
-        Expectations: ResolveError raised.
+    def test_falls_back_to_default_on_unknown_name(self, real_conn):
+        """Setup: project exists; unknown status name passed.
+        Expectations: resolve_status returns a positive id (the default).
         """
         project_id = make_project(real_conn)
 
-        with pytest.raises(ResolveError):
-            Resolver(real_conn).resolve_status(project_id, "Bogus", "story")
+        status_id = Resolver(real_conn).resolve_status(project_id, "Bogus", "story")
+
+        assert isinstance(status_id, int) and status_id > 0
+
+    def test_fallback_logs_warning(self, real_conn, caplog):
+        """Setup: unknown status name.
+        Expectations: exactly one warning is logged, matching the exact
+            "not found → falling back" message.
+        """
+        project_id = make_project(real_conn)
+        caplog.set_level(logging.WARNING)
+
+        Resolver(real_conn).resolve_status(project_id, "Bogus", "story")
+
+        messages = [record.getMessage() for record in caplog.records]
+        assert messages == [
+            f"Status 'Bogus' not found for project {project_id} (story), falling back to default"
+        ]
+
+    def test_none_name_returns_default_without_warning(self, real_conn, caplog):
+        """Setup: name=None.
+        Expectations: returns the default; no warning emitted.
+        """
+        project_id = make_project(real_conn)
+        caplog.set_level(logging.WARNING)
+
+        status_id = Resolver(real_conn).resolve_status(project_id, None, "story")
+
+        assert isinstance(status_id, int) and status_id > 0
+        assert not caplog.records
 
     def test_invalid_ticket_type_raises(self, real_conn):
         """Setup: project exists.

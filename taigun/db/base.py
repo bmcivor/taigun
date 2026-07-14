@@ -36,7 +36,11 @@ class BaseWriter(ABC):
         return project_id, owner_id, status_id, now
 
     def _resolve_status(self, project_id: int, status: str | None) -> int:
-        """Resolve status ID, falling back to the project default if not set.
+        """Resolve status ID for this writer's ticket type.
+
+        Delegates to ``Resolver.resolve_status`` which handles both the
+        None case (returns default silently) and the unknown-name case
+        (warn + fall back to default).
 
         Args:
             project_id: Project ID.
@@ -45,9 +49,7 @@ class BaseWriter(ABC):
         Returns:
             Status ID.
         """
-        if status is not None:
-            return self._resolver.resolve_status(project_id, status, self._ticket_type)
-        return self._resolver.resolve_default_status(project_id, self._ticket_type)
+        return self._resolver.resolve_status(project_id, status, self._ticket_type)
 
     def _allocate_and_set_ref(self, project_id: int, object_id: int) -> int:
         """Allocate a project-scoped ref and write it back to the inserted row.
