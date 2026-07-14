@@ -157,12 +157,19 @@ Last updated: 2026-07-13
   Source-repo commit removed all 51 ticket files under `docs/epics/` and
   the untracked `.taigun/`. `~/Tickets/` was `git init`'d for a future
   local-only history option; no remote configured
+- 040 complete (E11 closed): README gained a "Where to put your tickets"
+  section explaining the central `~/Tickets/` layout, the anti-pattern of
+  committing tickets into product repos, and the sidecar seeding step for a
+  fresh directory. Pushing-tickets section updated with the full output
+  vocabulary (`(unchanged)`, `↺ updated`, `↷ skipped`, `~ dry-run`) and the
+  update / `--force` semantics. `docs/ticket-format.md` gained a one-line
+  pointer back to the README. `taigun-tickets` skill moved into the repo at
+  `.claude/skills/taigun-tickets/SKILL.md` and rewritten for the central-dir
+  workflow; the user-scoped copy at `~/.claude/skills/…` is kept in sync as
+  a byte-identical mirror. E11 done
 
 ## What's next
 
-- 040 (E11): update taigun README, `docs/ticket-format.md`, and the
-  `taigun-tickets` skill so the documented workflow matches the central-directory
-  reality now that 039 has landed
 - Cross-repo migration campaign (per [docs/migration-plan.md](migration-plan.md),
   local working notes): vertex-play mass-edit + migration, vertex-block
   conversion + migration

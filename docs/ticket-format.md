@@ -4,6 +4,10 @@ taigun parses markdown files with a YAML frontmatter block followed by a structu
 markdown body. The format is derived from the vertex-play ticket convention with the
 addition of a frontmatter block for machine-readable metadata.
 
+For how to organise ticket files across multiple projects (recommended: a per-user
+central directory outside your product source repos), see the "Where to put your
+tickets" section in the [README](../README.md).
+
 ## Structure
 
 ```markdown
