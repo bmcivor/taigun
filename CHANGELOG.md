@@ -1,6 +1,38 @@
 # CHANGELOG
 
 
+## v2.0.0 (2026-07-14)
+
+### Bug Fixes
+
+- Update planning status doc
+  ([`f0620f1`](https://github.com/bmcivor/taigun/commit/f0620f10ef04fc338c7c3f535ddf3891c4942025))
+
+- Update uv.lock version to match repo
+  ([`0a14801`](https://github.com/bmcivor/taigun/commit/0a14801dab1c55e778c6277bf6f0db79530caeaa))
+
+- **037**: Stop hard failures on status resolver attempts
+  ([`24f9fef`](https://github.com/bmcivor/taigun/commit/24f9fefc35022aafbab826ee1fc3eb22d4ee3f1d))
+
+### Chores
+
+- Update mistake in plan for tickets refactoring
+  ([`24895fd`](https://github.com/bmcivor/taigun/commit/24895fd51287d2bf1f2c38168bf6b1999d5841a0))
+
+### Features
+
+- **039**: Remove tickets from repo
+  ([`6d17c06`](https://github.com/bmcivor/taigun/commit/6d17c0629c92ccc3d34eb16f16760efff46e28cd))
+
+Time to start using this tool in a more production like manner.
+
+It's not really a normal practice to have tickets on disk, committed to the repo. So moving it to a
+  more communal, user managed dir format where all repos will have their status tracked.
+
+- **040**: Migrate local skill knowledge to tool repo
+  ([`9299ff4`](https://github.com/bmcivor/taigun/commit/9299ff49cbd145e749de56f282ec15b07ca0f077))
+
+
 ## v1.1.0 (2026-07-14)
 
 ### Bug Fixes
