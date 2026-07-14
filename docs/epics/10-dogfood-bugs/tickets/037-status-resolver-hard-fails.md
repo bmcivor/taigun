@@ -2,6 +2,7 @@
 type: story
 project: taigun
 assignee: bmcivor
+status: Done
 ---
 
 ## 37. Status resolver fails hard on unknown status name

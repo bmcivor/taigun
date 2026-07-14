@@ -141,15 +141,22 @@ Last updated: 2026-07-13
   layout, frontmatter contract, migration approach, and out-of-scope items
   (path is user-chosen, vertex-* migrations owned by their own repos, no
   taigun code change, no update to ADR-004)
+- 037 complete: `resolve_status` now takes `Optional[str]`, falls back to the
+  project default when the name is unknown or None, and logs a warning only
+  when a name was given but not found — mirroring `resolve_priority` /
+  `resolve_issue_type` / `resolve_severity`. `BaseWriter._resolve_status`
+  simplified to a thin delegate now that the resolver handles both cases.
+  Three regression tests in `TestResolveStatus` (falls back on unknown,
+  warns on fallback, None returns default silently); old raise-on-unknown
+  test removed
 
 ## What's next
 
 - 039 (E11): `git mv` taigun's `docs/epics/` into `~/Tickets/taigun/docs/epics/`,
-  delete + re-push on the lab from the new location
+  rewrite sidecar paths, verify push against the same lab project is a no-op
 - 040 (E11): update taigun README, `docs/ticket-format.md`, and the
   `taigun-tickets` skill so the documented workflow matches the central-directory
   reality after 039 lands
-- 037 (E10) — status resolver fallback fix
 - Vertex-* repo migrations to `~/Tickets/<slug>/` (owned by each source repo;
   ADR-005 sets the destination but doesn't schedule the moves)
 
