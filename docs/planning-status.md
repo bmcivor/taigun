@@ -128,12 +128,30 @@ Last updated: 2026-07-13
   sidecar under the first source file's directory. Three new regression tests in
   `tests/test_state.py::TestLocateSidecar`; `tests/cli/test_push.py::make_config`
   now creates `.git/` under `tmp_path` so push tests still work
+- 025 dog-food re-run: fresh Taigun project on the lab, all 51 epic + story tickets
+  pushed cleanly after 036 landed; every ticket carries `assignee: bmcivor`
+  (mechanical mass-edit, not a taigun feature change); 037 filed for the
+  `resolve_status` hard-fail surfaced by the first attempt
+- 037 filed (E10): `resolve_status` fails hard on unknown status name while
+  `resolve_priority` warns and falls back — proposed fix is to make status
+  symmetric with priority
+- New epic E11 opened for moving taigun-managed tickets out of product source
+  repos into a per-user central `~/Tickets/` directory
+- 038 complete (first E11 ticket): ADR-005 written and marked Accepted; covers
+  layout, frontmatter contract, migration approach, and out-of-scope items
+  (path is user-chosen, vertex-* migrations owned by their own repos, no
+  taigun code change, no update to ADR-004)
 
 ## What's next
 
-- E8 remaining (025): re-run real-Taiga dog-food for tasks/issues/tags/parent-link/
-  epic-link now that 036 unblocks multi-directory push. Includes an API-render
-  check per pushed item — this is the coverage 029 was going to provide
+- 039 (E11): `git mv` taigun's `docs/epics/` into `~/Tickets/taigun/docs/epics/`,
+  delete + re-push on the lab from the new location
+- 040 (E11): update taigun README, `docs/ticket-format.md`, and the
+  `taigun-tickets` skill so the documented workflow matches the central-directory
+  reality after 039 lands
+- 037 (E10) — status resolver fallback fix
+- Vertex-* repo migrations to `~/Tickets/<slug>/` (owned by each source repo;
+  ADR-005 sets the destination but doesn't schedule the moves)
 
 ## Postponed
 
