@@ -12,14 +12,16 @@ assignee: bmcivor
 
 ### Context
 
-ADR-005 sets the destination. This ticket does the actual move for the taigun repo and verifies the whole cycle works: git move → re-push → sidecar populates correctly → tickets render in Taiga as they did before, except now the sidecar sits at `~/Tickets/.taigun/state.yaml` and product-repo history is done taking ticket-tracking commits.
+ADR-005 sets the destination. This ticket does the actual move for the taigun repo and verifies the whole cycle works: git move → sidecar path-rewrite → push is a no-op against the lab (content-hashes unchanged, refs preserved).
+
+The Taiga project on the lab is **not** deleted. Because `git mv` doesn't change file bytes, the sidecar's `content_hash` values still match, and rewriting only the `file_path` fields (from `docs/epics/…` to `taigun/docs/epics/…`) is enough to keep every entry pointing at the correct existing ref. Push then reports `(unchanged) #N …` for all 51 entries and writes nothing to Taiga.
 
 ### Acceptance criteria
 
 - `~/Tickets/` exists as a git repo (`git init` if not already).
 - The taigun source repo's entire `docs/epics/` tree is `git mv`'d to `~/Tickets/taigun/docs/epics/`, preserving epic/tickets structure. The source-repo commit removes `docs/epics/` and only `docs/epics/` (README, ADRs, ticket-format.md, planning-status.md, decisions/, dog-food-audit.md all stay in the source repo).
-- Taiga project `taigun` on the lab is deleted before the re-push (per the pattern established in the earlier dogfood pass — sidecar and Taiga state need to line up from empty).
-- Re-push runs from `~/Tickets/` and pushes every taigun epic + ticket to Taiga successfully. Sidecar entries carry paths relative to the `~/Tickets/` root (e.g. `taigun/docs/epics/01-infrastructure/epic.md`), not relative to the old source-repo root.
+- The sidecar is moved to `~/Tickets/.taigun/state.yaml` with `file_path` values rewritten to be relative to the new repo root (`taigun/docs/epics/…`). `content_hash`, `ref`, `project`, `ticket_type`, and `last_pushed_at` stay untouched.
+- A push from `~/Tickets/` against the same lab project reports `(unchanged) #N …` for every entry and makes no Taiga writes.
 - No taigun code change is made under this ticket — the migration succeeds using the CLI as it stands after 036.
 - The E11 epic dir moves with the rest (so the ticket that describes moving itself ends up correctly under `~/Tickets/taigun/docs/epics/11-...`).
 
