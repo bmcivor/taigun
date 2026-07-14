@@ -149,16 +149,23 @@ Last updated: 2026-07-13
   Three regression tests in `TestResolveStatus` (falls back on unknown,
   warns on fallback, None returns default silently); old raise-on-unknown
   test removed
+- 039 complete: taigun's own `docs/epics/` tree copied to `~/Tickets/taigun/docs/epics/`;
+  sidecar copied to `~/Tickets/.taigun/state.yaml` with `file_path` values
+  rewritten from `docs/epics/…` to `taigun/docs/epics/…`. Verification push
+  from `~/Tickets/` reported 48 `(unchanged)` + 3 legitimate updates (for
+  037/038/039 which had genuinely changed since the last mass-edit push).
+  Source-repo commit removed all 51 ticket files under `docs/epics/` and
+  the untracked `.taigun/`. `~/Tickets/` was `git init`'d for a future
+  local-only history option; no remote configured
 
 ## What's next
 
-- 039 (E11): `git mv` taigun's `docs/epics/` into `~/Tickets/taigun/docs/epics/`,
-  rewrite sidecar paths, verify push against the same lab project is a no-op
 - 040 (E11): update taigun README, `docs/ticket-format.md`, and the
   `taigun-tickets` skill so the documented workflow matches the central-directory
-  reality after 039 lands
-- Vertex-* repo migrations to `~/Tickets/<slug>/` (owned by each source repo;
-  ADR-005 sets the destination but doesn't schedule the moves)
+  reality now that 039 has landed
+- Cross-repo migration campaign (per [docs/migration-plan.md](migration-plan.md),
+  local working notes): vertex-play mass-edit + migration, vertex-block
+  conversion + migration
 
 ## Postponed
 
