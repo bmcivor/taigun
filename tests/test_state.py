@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 
 from taigun.state import (
     StateEntry,
@@ -193,9 +194,9 @@ class TestStateFileRecordAndSave:
         state.record(source, "p", 1, "story", "sha256:aaa")
         state.save()
 
-        content = sidecar.read_text()
-        assert "docs/foo.md" in content
-        assert str(source) not in content  # absolute path not stored
+        loaded = yaml.safe_load(sidecar.read_text())
+        assert [e["file_path"] for e in loaded["entries"]] == ["docs/foo.md"]
+        assert str(source) not in sidecar.read_text()
 
     def test_record_source_outside_sidecar_dir_raises(self, tmp_path: Path) -> None:
         """Setup: sidecar in tmp_path/repo/, source file in tmp_path/other/.
