@@ -216,14 +216,18 @@ class TestResolvePriority:
 
     def test_fallback_logs_warning(self, real_conn, caplog):
         """Setup: unknown priority name.
-        Expectations: a warning naming the unknown value is logged.
+        Expectations: exactly one warning is logged, matching the exact
+            "not found → falling back" message.
         """
         project_id = make_project(real_conn)
         caplog.set_level(logging.WARNING)
 
         Resolver(real_conn).resolve_priority(project_id, "Bogus")
 
-        assert any("Bogus" in record.message for record in caplog.records)
+        messages = [record.getMessage() for record in caplog.records]
+        assert messages == [
+            f"Priority 'Bogus' not found for project {project_id}, falling back to default"
+        ]
 
     def test_none_name_returns_default_without_warning(self, real_conn, caplog):
         """Setup: name=None.
@@ -257,12 +261,18 @@ class TestResolveIssueType:
         assert isinstance(type_id, int) and type_id > 0
 
     def test_fallback_logs_warning(self, real_conn, caplog):
+        """Setup: unknown issue_type name.
+        Expectations: exactly one warning matching the exact fallback message.
+        """
         project_id = make_project(real_conn)
         caplog.set_level(logging.WARNING)
 
         Resolver(real_conn).resolve_issue_type(project_id, "Bogus")
 
-        assert any("Bogus" in record.message for record in caplog.records)
+        messages = [record.getMessage() for record in caplog.records]
+        assert messages == [
+            f"Issue type 'Bogus' not found for project {project_id}, falling back to default"
+        ]
 
     def test_none_name_returns_default_without_warning(self, real_conn, caplog):
         project_id = make_project(real_conn)
@@ -293,12 +303,18 @@ class TestResolveSeverity:
         assert isinstance(sev_id, int) and sev_id > 0
 
     def test_fallback_logs_warning(self, real_conn, caplog):
+        """Setup: unknown severity name.
+        Expectations: exactly one warning matching the exact fallback message.
+        """
         project_id = make_project(real_conn)
         caplog.set_level(logging.WARNING)
 
         Resolver(real_conn).resolve_severity(project_id, "Bogus")
 
-        assert any("Bogus" in record.message for record in caplog.records)
+        messages = [record.getMessage() for record in caplog.records]
+        assert messages == [
+            f"Severity 'Bogus' not found for project {project_id}, falling back to default"
+        ]
 
     def test_none_name_returns_default_without_warning(self, real_conn, caplog):
         project_id = make_project(real_conn)
