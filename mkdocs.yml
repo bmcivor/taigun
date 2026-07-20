@@ -1,0 +1,35 @@
+site_name: taigun
+site_description: Write Taiga tickets directly to the database from the command line
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.sections
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+not_in_nav: |
+  history/
+  future-work.md
+  migration-plan.md
+
+nav:
+  - Home: index.md
+  - Reference:
+    - Ticket format: reference/ticket-format.md
+  - Explanation:
+    - Decisions:
+      - ADR-001 — Direct DB writes: explanation/decisions/ADR-001-direct-db-writes.md
+      - ADR-002 — Markdown ticket format: explanation/decisions/ADR-002-ticket-format.md
+      - ADR-003 — Database connectivity: explanation/decisions/ADR-003-connectivity.md
+      - ADR-004 — Update workflow: explanation/decisions/ADR-004-update-workflow.md
+      - ADR-005 — Central ticket directory: explanation/decisions/ADR-005-central-ticket-directory.md
