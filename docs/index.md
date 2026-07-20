@@ -8,27 +8,8 @@ means no dependency on the Taiga services being healthy, no authentication overh
 and no rate limits.
 
 Tickets are markdown files with a YAML frontmatter block — human-readable, diffable,
-and version-controllable:
-
-```markdown
----
-type: story
-project: my-project-slug
-assignee: blake
-tags: backend, auth
----
-
-## Title of the ticket
-
-**As a** developer
-**I want** a thing
-**So that** it works
-
-### Acceptance criteria
-
-- criterion one
-- criterion two
-```
+and version-controllable. See the [ticket format](reference/ticket-format.md) reference
+for the file shape.
 
 ```
 $ taigun push ticket.md
