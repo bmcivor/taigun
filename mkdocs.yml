@@ -30,6 +30,7 @@ nav:
     - Updating tickets: guides/updating-tickets.md
     - Managing projects: guides/projects.md
     - Milestones: guides/milestones.md
+    - Multiple profiles: guides/profiles.md
   - Reference:
     - Ticket format: reference/ticket-format.md
   - Explanation:
