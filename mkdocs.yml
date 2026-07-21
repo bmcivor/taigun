@@ -27,6 +27,7 @@ nav:
   - Getting started: getting-started.md
   - Guides:
     - Organising tickets: guides/organising-tickets.md
+    - Updating tickets: guides/updating-tickets.md
   - Reference:
     - Ticket format: reference/ticket-format.md
   - Explanation:
