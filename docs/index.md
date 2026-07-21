@@ -36,6 +36,8 @@ of the above, use the official Taiga REST API instead. The reasoning is covered 
 
 ## Documentation
 
+- [Getting started](getting-started.md) — install, configure, and push your first
+  ticket
 - [Ticket format](reference/ticket-format.md) — full frontmatter and body field
   reference for every ticket type
 - Decisions — the ADRs behind taigun's design, under Explanation in the navigation
