@@ -32,6 +32,7 @@ nav:
     - Milestones: guides/milestones.md
     - Multiple profiles: guides/profiles.md
   - Reference:
+    - CLI: reference/cli.md
     - Ticket format: reference/ticket-format.md
   - Explanation:
     - Decisions:
