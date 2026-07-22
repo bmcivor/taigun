@@ -17,10 +17,8 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 
-not_in_nav: |
+exclude_docs: |
   history/
-  future-work.md
-  migration-plan.md
 
 nav:
   - Home: index.md
