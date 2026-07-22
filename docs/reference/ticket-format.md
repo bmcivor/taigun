@@ -5,8 +5,8 @@ markdown body. The format is derived from the vertex-play ticket convention with
 addition of a frontmatter block for machine-readable metadata.
 
 For how to organise ticket files across multiple projects (recommended: a per-user
-central directory outside your product source repos), see the "Where to put your
-tickets" section in the [README](../README.md).
+central directory outside your product source repos), see the
+[organising tickets guide](../guides/organising-tickets.md).
 
 ## Structure
 
