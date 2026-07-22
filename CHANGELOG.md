@@ -1,6 +1,66 @@
 # CHANGELOG
 
 
+## v2.1.0 (2026-07-22)
+
+### Chores
+
+- Add in basic explanation and format structure
+  ([`56763d6`](https://github.com/bmcivor/taigun/commit/56763d62d07f56636ec9453ec75ace8fcb787de2))
+
+- Add in cli reference
+  ([`da79813`](https://github.com/bmcivor/taigun/commit/da79813448866b42abb00c421762b59b6d3dfe98))
+
+- Add in configuration reference
+  ([`7775d9a`](https://github.com/bmcivor/taigun/commit/7775d9a338f607b3698a4c43a687241878ea9742))
+
+- Add in docs Jenkinsfile step to verify docs build
+  ([`3929e05`](https://github.com/bmcivor/taigun/commit/3929e05c5bc78ec38801cd63627694ebc206c90e))
+
+- Add in getting started tutorial pages
+  ([`8008f0f`](https://github.com/bmcivor/taigun/commit/8008f0fe62126ee8d9bf74cb6d7bfb607cf94019))
+
+- Add in guide for managing project level
+  ([`b59ae03`](https://github.com/bmcivor/taigun/commit/b59ae0319d0c0e85e3d3adf9dade093155b655d7))
+
+- Add in managing multiple profiles
+  ([`9fa25f1`](https://github.com/bmcivor/taigun/commit/9fa25f1303d812ee8c877577c670c9dd724a3ff8))
+
+- Add in milestones documentation
+  ([`fb3314f`](https://github.com/bmcivor/taigun/commit/fb3314fac24eb5a1242d0f7692ab21428153a569))
+
+- Add in specific docs build stage for CI pipeline
+  ([`207d8e7`](https://github.com/bmcivor/taigun/commit/207d8e7ae0165dde7279578db5f306bd98411662))
+
+- Add in state file reference sheet
+  ([`ed2e2e3`](https://github.com/bmcivor/taigun/commit/ed2e2e322cbfded160e7204065967b1e56465ed2))
+
+- Add in ticket organisation guide
+  ([`a410d16`](https://github.com/bmcivor/taigun/commit/a410d1641f6e82a480e80bd138c13211b3bc9fb0))
+
+- Add in updating tickets guide
+  ([`3303f00`](https://github.com/bmcivor/taigun/commit/3303f00b1b882980263a8810573ce219c9e34c27))
+
+- Clean up existing documentation structure
+  ([`98c8fd8`](https://github.com/bmcivor/taigun/commit/98c8fd8f1b5b297c850a4aaedb3374b2386f354d))
+
+To prepare for the incoming new, fully detailed structure.
+
+- Clean up some claude mess in test assertions
+  ([`ee6da5b`](https://github.com/bmcivor/taigun/commit/ee6da5b090c0057b702e975adf9eafe027bfc775))
+
+- Initial finalisation stage of documentation
+  ([`8dffb61`](https://github.com/bmcivor/taigun/commit/8dffb6141bcbca5855de9ab6a33b7e3a90df8ce3))
+
+- Remove duplicated frontmatter explanation on index
+  ([`c8dd7ad`](https://github.com/bmcivor/taigun/commit/c8dd7ad70e4921a47e72ac7483184b97a9a4de36))
+
+- Remove untracked files and exclusions
+  ([`752c195`](https://github.com/bmcivor/taigun/commit/752c195e1bfc313b4af7a213136858ef37c5840f))
+
+We don't need them anymore.
+
+
 ## v2.0.0 (2026-07-14)
 
 ### Bug Fixes
