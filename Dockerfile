@@ -23,3 +23,8 @@ FROM test AS release
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
+
+FROM squidfunk/mkdocs-material:9.7.1 AS docs
+
+COPY mkdocs.yml ./
+COPY docs/ ./docs/

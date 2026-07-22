@@ -57,7 +57,7 @@ services:
       - .:/app
 
   docs:
-    image: squidfunk/mkdocs-material
+    image: squidfunk/mkdocs-material:9.7.1
     ports:
       - "8000:8000"
     volumes:
