@@ -1,6 +1,6 @@
 ---
 name: taigun-tickets
-description: Write tickets in the taigun markdown format and push them to a Taiga instance via the taigun CLI. Use this skill whenever the user wants to write project tickets (stories, epics, tasks, issues, milestones), convert existing tickets to taigun format, push tickets to Taiga, or update already-pushed tickets. Triggers on phrases like "write tickets", "write tickets for X", "fire them off to Taiga", "push these to Taiga", "add this to Taiga", "convert these to taigun format", "mark ticket done", "update the ticket status", "dog-food tickets". Covers the YAML frontmatter spec, body structure, where files live (per-user central directory, not per-repo), how to invoke the CLI, and known pitfalls (epic-ref two-pass, project must exist, priority being issue-only, sidecar-anchor requirement).
+description: Write tickets in the taigun markdown format and push them to a Taiga instance via the taigun CLI. Use this skill whenever the user wants to write project tickets (stories, epics, tasks, issues, milestones), convert existing tickets to taigun format, push tickets to Taiga, or update already-pushed tickets. Triggers on phrases like "write tickets", "write tickets for X", "fire them off to Taiga", "push these to Taiga", "add this to Taiga", "convert these to taigun format", "mark ticket done", "update the ticket status", "dog-food tickets". Covers where ticket files live (per-user central directory, not per-repo), how to invoke the CLI, lab connection specifics, and known pitfalls; points to the taigun docs for the full frontmatter spec and CLI reference.
 ---
 
 # Taigun ticket workflow
@@ -9,94 +9,30 @@ description: Write tickets in the taigun markdown format and push them to a Taig
 
 `taigun` is a Python CLI that writes Taiga tickets directly to Taiga's PostgreSQL database, bypassing the Taiga API. Tickets are markdown files with YAML frontmatter; `taigun push` parses them, resolves FK references against the live DB, and inserts or updates.
 
-Format spec is the source of truth: `~/Development/Lab/taigun/docs/ticket-format.md`. Read it when in doubt — anything below is a working summary.
+## Docs first
 
-## Ticket format
+The taigun repo's docs (`~/Development/Lab/taigun/docs/`) are the source of truth. Read the relevant page on demand rather than working from memory:
 
-Frontmatter is YAML. `type` and `project` are required. `status` is optional (defaults to the project's default status for that type).
+- `reference/ticket-format.md` — frontmatter fields, body structure per type, description assembly. **Read this before writing any ticket.**
+- `reference/cli.md` — every command, flag, push output vocabulary, exit codes.
+- `reference/state-file.md` — sidecar format, discovery walk, safe hand-edits (removing entries, fixing paths after moves).
+- `guides/organising-tickets.md` — central-directory layout and anchoring rules.
+- `guides/updating-tickets.md` — update, conflict, and `field: null` clearing semantics.
+- `guides/milestones.md` — sprint files.
 
-| Field | Required | Applies to | Notes |
-|---|---|---|---|
-| `type` | Yes | all | `story`, `issue`, `task`, `epic`, `milestone` |
-| `project` | Yes | all | Project slug, must exist before push |
-| `status` | No | all | Status name; use `Done` for completed work. Unknown names warn and fall back to the project default (037) |
-| `epic` | No | story, task | Epic **ref** number (not slug) — see two-pass note below |
-| `parent` | No | task | Parent user-story ref number |
-| `assignee` | No | all | Taiga username |
-| `milestone` | No | story, issue, task | Sprint/milestone name; must exist |
-| `tags` | No | all | Comma-separated string or YAML list |
-| `issue_type` | No | issue | `Bug`, `Question`, `Enhancement` |
-| `severity` | No | issue | `Critical`, `High`, `Normal`, `Low`, `Wishlist` |
-| `priority` | No | **issue only** | see note below |
-| `estimated_start` | Yes | milestone | Sprint start date (`YYYY-MM-DD`) |
-| `estimated_finish` | Yes | milestone | Sprint end date (`YYYY-MM-DD`) |
-| `closed` | No | milestone | Bool — sprint closed. Default false |
-
-Body structure (stories/tasks):
-
-```markdown
-## NN. Title
-
-**As a** [role]
-**I want** [goal]
-**So that** [reason]
-
-### Acceptance criteria
-
-- ...
-
-### Context
-(optional, free text)
-
-### Scope boundary
-(optional)
-
-### Dependencies
-- 002, 003
-
-### Blocks
-- 005
-```
-
-Epics use the same structure minus the As a / I want / So that block, with `## EN — Title`. All `###` sections are concatenated into the ticket's description verbatim.
-
-Milestones are minimal — frontmatter plus `## Title` and nothing else. Taiga's `milestones_milestone` table has no description column, so any content after the title raises `ParseError`.
-
-**Priority is issue-only.** Taiga's schema has no priority column for stories, tasks, or epics. Adding a `### Priority` section or `priority:` frontmatter field to any of those types raises `ParseError`. Issues can use either or both. For stories/tasks/epics that _informally_ want to note importance, put `**Priority:** High` inline in the body — it lands in the description as plain text.
-
-**Clearing a previously-set field.** Once a ticket has been pushed, dropping a frontmatter field on the next push errors (`FieldClearedError`). Clearing requires an explicit `field: null` so accidental deletions are loud.
+Invariants that gate most mistakes, kept inline: `type` and `project` are required; **priority is issue-only** (stories/tasks/epics note importance inline as `**Priority:** X` in the body); milestone files are frontmatter + `## Title` and nothing else; `epic:` takes the epic's Taiga **ref number**; clearing a previously-pushed field requires an explicit `field: null`.
 
 ## Where new tickets live
 
-Per **ADR-005** (Accepted 2026-07-13): ticket source files live in a **per-user central directory**, not in the product source repos. The intended layout:
+Per **ADR-005**: a per-user central directory, not product source repos. One subtree per project slug under `~/Tickets/`, one sidecar for everything at `~/Tickets/.taigun/state.yaml`. Ticket numbers are project-wide and monotonically increasing.
 
-```
-~/Tickets/                       <-- user-chosen root
-├── .taigun/state.yaml           <-- one sidecar for every project
-├── taigun/
-│   └── docs/epics/NN-<slug>/{epic.md, tickets/NNN-<slug>.md}
-├── vertex-play/
-│   └── docs/epics/...
-└── vertex-block/
-    └── docs/epics/...
-```
+Layouts currently vary per project — taigun E1–E11 sit under `taigun/docs/epics/`, E12+ under `taigun/epics/`; vertex-play uses `docs/epics/`. Follow whatever tree the project already uses. `project:` in the frontmatter is the authoritative dispatch key; the directory path is convention for humans, never inferred by taigun.
 
-Rules:
+**Do not add `docs/epics/` back into a product source repo.**
 
-- One sub-directory per Taiga project, named after the project slug.
-- Inside each sub-directory, the existing `docs/epics/<NN>-<kebab-name>/{epic.md, tickets/}` structure is preserved.
-- Ticket numbers are project-wide and monotonically increasing across all its epics.
-- `.taigun/state.yaml` sits at `~/Tickets/.taigun/state.yaml`. It tracks the file → Taiga ref mapping, content hashes for idempotency, and last-pushed timestamps for conflict detection.
+## Push workflow (lab specifics)
 
-`project:` in the ticket's frontmatter remains the authoritative dispatch key. Directory location is a filesystem convention for humans to navigate; taigun does not enforce or infer the project from the path.
-
-**Do not add `docs/epics/` back into a product source repo.** Every taigun-managed edit becomes a commit — that's what moved out of source repos in the first place.
-
-## Push workflow
-
-taigun runs **natively via `uv run`**. No docker for the CLI itself.
-
-### 1. One-time setup
+taigun runs natively via `uv run` — no docker for the CLI itself.
 
 Config lives at `~/.config/taigun/config.toml`:
 
@@ -110,78 +46,42 @@ password = "changeme"          # tracked in vertex-studio/roles/taiga/templates/
 acting_user = "bmcivor"
 ```
 
-Or run `uv run taigun configure` inside `~/Development/Lab/taigun` for the interactive setup.
+Every ticket carries `assignee: bmcivor` by lab convention.
 
-If `~/Tickets/` doesn't have a sidecar yet, seed it before the first push (else `locate_sidecar` errors out):
+If `~/Tickets/` has no sidecar yet, seed it first: `mkdir -p ~/Tickets/.taigun && touch ~/Tickets/.taigun/state.yaml`.
 
-```bash
-mkdir -p ~/Tickets/.taigun && touch ~/Tickets/.taigun/state.yaml
-```
-
-### 2. Make sure the project exists on the Taiga side
+The project must exist on the Taiga side before any push:
 
 ```bash
 uv run --project ~/Development/Lab/taigun taigun projects list
 uv run --project ~/Development/Lab/taigun taigun projects create "Display Name" project-slug
 ```
 
-Project creation materialises statuses, priorities, severities, issue types, points, and roles from the default template. This must run before any `push`.
-
-### 3. Push the tickets
-
-From `~/Tickets/` (or anywhere — paths can be relative or absolute):
+Then push, epics first so their refs exist for story linking:
 
 ```bash
 cd ~/Tickets
-uv run --project ~/Development/Lab/taigun taigun push <project>/docs/epics/*/epic.md
-uv run --project ~/Development/Lab/taigun taigun push <project>/docs/epics/*/tickets/*.md
+uv run --project ~/Development/Lab/taigun taigun push <project>/epics/*/epic.md
+uv run --project ~/Development/Lab/taigun taigun push <project>/epics/*/tickets/*.md
 ```
 
-Push epics first so their refs exist when stories link to them.
+**Do not use `--dry-run` against the lab.** It permanently consumes ref numbers (sequence advances survive rollback) and misreports would-be updates as inserts — taigun ticket 045 (E12). Skip dry-run until that lands.
 
-Per-file output:
+## Updating
 
-- `✓ #42 story: "Title"` — inserted, new ticket
-- `(unchanged) #42 story: "Title"` — sidecar hash matches, no-op
-- `↺ #42 story: "Title" (updated)` — content changed, updated in Taiga
-- `↷ #42 story: skipped (Taiga was edited)` — conflict; someone edited via UI. Re-run with `--force` to overwrite.
-
-### 4. Dry-run first (recommended for anything non-trivial)
-
-```bash
-uv run --project ~/Development/Lab/taigun taigun push --dry-run <project>/docs/epics/*/*.md
-```
-
-`~ story: "…"` means "would push in a real run". Catches parse errors and missing FKs before hitting the real Taiga.
-
-## Update workflow
-
-Edit the source file → re-run `taigun push` on it. taigun looks up the file in the sidecar, dispatches to update instead of insert, and:
-
-- Reports `(unchanged) #N …` if content hash matches — no-op.
-- Reports `↺ #N … (updated)` if content changed — updates the Taiga row.
-- Prompts if Taiga's `modified_date` is newer than `last_pushed_at` (someone edited via UI). `--force` skips the prompt and overwrites.
-- Prompts if the file's sidecar entry points at a ref that no longer exists on Taiga (someone deleted it). `--force` re-inserts.
-
-Immutable identity: `project` and `type` in the frontmatter cannot change on re-push — that errors as `IdentityChangeError` (it's a different ticket, not an edit).
+Edit the source file, re-push the same path — the sidecar dispatches to update. `--force` skips the conflict and missing-in-Taiga prompts. Full semantics in `guides/updating-tickets.md`.
 
 ## Pitfalls
 
-**Story → epic linking needs two passes.** The `epic:` frontmatter field is the epic's Taiga ref number, assigned at push time. So: push epics first, note the refs from the output (e.g. `✓ #3 epic: "..."`), then add `epic: 3` to the relevant story frontmatter and push the stories.
-
-**Project must be created before push.** If a project slug doesn't exist, `taigun push` fails on resolve. Run `taigun projects create` first.
-
-**Sidecar location.** `locate_sidecar` walks up looking for an existing `.taigun/state.yaml`, then for `.git/` as a fallback anchor. If neither is found on the walk-up, it raises `StateError` — never silently places the sidecar at the first source file's parent. Fix by `mkdir ~/Tickets/.taigun && touch ~/Tickets/.taigun/state.yaml` at your intended root.
-
-**Do not commit `~/Tickets/.taigun/state.yaml` to a shared remote.** The sidecar is per-user tracking state; sharing it produces meaningless merge conflicts (see ADR-005 rationale).
-
-**Watch for NULL-field bugs on new projects.** Historically (fixed in ProjectCreator as of v1.0): `projects_project.tags_colors`, `projects_project.tags`, `projects_project.default_points_id`, and the module activation flags were left NULL/false on `projects create`, which crashed the Taiga API serializer and made the project's UI tabs blank. If a freshly created project's UI is broken, check those columns and the taiga-back logs for `dict()` / `length` errors.
-
-**Cross-repo edits need approval.** Per project rules, editing files in another repo (e.g. converting vertex-play tickets from taigun's repo) requires explicit confirmation from B and a fresh branch in the target repo first.
+- **Story → epic linking needs two passes.** Epic refs are assigned at push time: push epics, note the refs from the output, then set `epic: <ref>` on stories and push those.
+- **Sidecar anchoring.** `locate_sidecar` walks up for an existing `.taigun/state.yaml`, then `.git/`; neither found is a loud error, fixed by seeding (above).
+- **Never commit `~/Tickets/.taigun/state.yaml` to a shared remote** — per-user state, meaningless merge conflicts.
+- **Watch for NULL-field bugs on new projects.** Historically (fixed as of v1.0) `projects create` left `tags_colors`, `tags`, `default_points_id`, and module flags NULL/false, crashing the Taiga API serializer. If a fresh project's UI is broken, check those columns and taiga-back logs for `dict()` / `length` errors.
+- **Cross-repo edits need approval.** Editing files in another repo requires explicit confirmation from B and a fresh branch in the target repo first.
 
 ## Confirming what you wrote
 
-Sanity-check via the Taiga UI (`http://shadowlands:9000`) or by querying the lab DB directly. From WSL with `psycopg2` available:
+Sanity-check via the Taiga UI (`http://shadowlands:9000`) or query the lab DB directly:
 
 ```bash
 uv run --project ~/Development/Lab/taigun python -c "
