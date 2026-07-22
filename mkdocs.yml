@@ -34,6 +34,7 @@ nav:
   - Reference:
     - CLI: reference/cli.md
     - Ticket format: reference/ticket-format.md
+    - Configuration: reference/configuration.md
   - Explanation:
     - Decisions:
       - ADR-001 — Direct DB writes: explanation/decisions/ADR-001-direct-db-writes.md
