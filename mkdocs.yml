@@ -37,9 +37,12 @@ nav:
     - Configuration: reference/configuration.md
     - State file: reference/state-file.md
   - Explanation:
+    - Architecture: explanation/architecture.md
+    - Database writes: explanation/database-writes.md
     - Decisions:
       - ADR-001 — Direct DB writes: explanation/decisions/ADR-001-direct-db-writes.md
       - ADR-002 — Markdown ticket format: explanation/decisions/ADR-002-ticket-format.md
       - ADR-003 — Database connectivity: explanation/decisions/ADR-003-connectivity.md
       - ADR-004 — Update workflow: explanation/decisions/ADR-004-update-workflow.md
       - ADR-005 — Central ticket directory: explanation/decisions/ADR-005-central-ticket-directory.md
+  - Development: development.md
