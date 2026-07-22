@@ -23,7 +23,8 @@ taigun push <file>... [--dry-run] [--force] [--profile <name>]
 ```
 
 Parses each file and inserts or updates the corresponding Taiga ticket. The
-sidecar decides which: files with an entry are updates, files without are inserts.
+sidecar decides which: files with an entry are updates, files without are inserts
+(see the [state file reference](state-file.md)).
 
 | Option | Effect |
 |---|---|
