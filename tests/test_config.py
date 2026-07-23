@@ -136,3 +136,24 @@ class TestConfigManagerSave:
 
         assert manager.load().host == "localhost"
         assert manager.load(profile="other").host == "otherhost"
+
+
+class TestProfileRepr:
+    def test_repr_omits_password(self):
+        """Setup: Profile constructed with a distinctive password value.
+        Expectations: repr(profile) equals the exact dataclass repr with
+            every non-password field present in its declared order —
+            proves password is omitted AND the rest of the shape is intact,
+            in one assertion.
+        """
+        profile = Profile(**{**VALID_PROFILE, "password": "hunter2"})
+
+        assert repr(profile) == (
+            "Profile("
+            "host='localhost', "
+            "port=5432, "
+            "database='taiga', "
+            "username='taiga', "
+            "acting_user='admin'"
+            ")"
+        )
