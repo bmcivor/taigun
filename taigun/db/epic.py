@@ -3,12 +3,7 @@ import random
 from typing import Optional
 
 from taigun.db.base import BaseWriter
-from taigun.db.update_helpers import (
-    check_field_cleared,
-    check_taiga_conflict,
-    parse_taiga_timestamp,
-)
-from taigun.exceptions import TicketMissingError
+from taigun.db.update_helpers import check_field_cleared
 from taigun.models import Epic
 
 
@@ -89,25 +84,15 @@ class EpicWriter(BaseWriter):
         for the field-clear / conflict / missing-ticket rules. Epic keeps its
         original ``color`` unless the source explicitly sets one.
         """
-        project_id = self._resolver.resolve_project(epic.project)
-
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, modified_date, assigned_to_id, color"
-                " FROM epics_epic WHERE project_id = %s AND ref = %s",
-                (project_id, ref),
+        project_id, object_id, (current_assigned_to, current_color) = (
+            self._fetch_for_update(
+                epic.project,
+                ref,
+                ["assigned_to_id", "color"],
+                last_pushed_at,
+                ignore_conflict,
             )
-            row = cur.fetchone()
-
-        if row is None:
-            raise TicketMissingError(
-                f"epic #{ref} not found in project '{epic.project}'"
-            )
-
-        object_id, taiga_modified, current_assigned_to, current_color = row
-
-        if not ignore_conflict:
-            check_taiga_conflict(taiga_modified, parse_taiga_timestamp(last_pushed_at))
+        )
 
         check_field_cleared("assignee", metadata_keys, current_assigned_to)
 

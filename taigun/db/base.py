@@ -1,7 +1,10 @@
 import datetime
 from abc import ABC, abstractmethod
+from typing import Sequence
 
 from taigun.db.ref import RefAllocator
+from taigun.db.update_helpers import check_taiga_conflict, parse_taiga_timestamp
+from taigun.exceptions import TicketMissingError
 
 
 class BaseWriter(ABC):
@@ -71,6 +74,51 @@ class BaseWriter(ABC):
             )
 
         return ref
+
+    def _fetch_for_update(
+        self,
+        project: str,
+        ref: int,
+        extra_columns: Sequence[str],
+        last_pushed_at: str,
+        ignore_conflict: bool,
+    ) -> tuple[int, int, tuple]:
+        """Shared prologue for every ticket writer's ``update()``.
+
+        Resolves the project, SELECTs the row keyed by (project_id, ref)
+        with ``id, modified_date`` plus any writer-specific extra columns,
+        raises ``TicketMissingError`` if the row is gone, and runs the
+        modified-date drift check unless ``ignore_conflict`` is set.
+
+        Returns ``(project_id, object_id, extras)`` where ``extras`` is a
+        tuple of the extra_columns values in the order requested — unpack
+        it at the call site.
+        """
+        project_id = self._resolver.resolve_project(project)
+
+        columns = ["id", "modified_date", *extra_columns]
+        with self._conn.cursor() as cur:
+            cur.execute(
+                f"SELECT {', '.join(columns)} FROM {self._table}"
+                f" WHERE project_id = %s AND ref = %s",
+                (project_id, ref),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise TicketMissingError(
+                f"{self._ticket_type} #{ref} not found in project '{project}'"
+            )
+
+        object_id, taiga_modified, *extras = row
+
+        if not ignore_conflict:
+            check_taiga_conflict(
+                taiga_modified,
+                parse_taiga_timestamp(last_pushed_at),
+            )
+
+        return project_id, object_id, tuple(extras)
 
     @abstractmethod
     def write(self, ticket, acting_user: str) -> int:

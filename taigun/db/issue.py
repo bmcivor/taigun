@@ -2,12 +2,7 @@ import datetime
 from typing import Optional
 
 from taigun.db.base import BaseWriter
-from taigun.db.update_helpers import (
-    check_field_cleared,
-    check_taiga_conflict,
-    parse_taiga_timestamp,
-)
-from taigun.exceptions import TicketMissingError
+from taigun.db.update_helpers import check_field_cleared
 from taigun.models import Issue
 
 
@@ -92,25 +87,15 @@ class IssueWriter(BaseWriter):
         for the field-clear / conflict / missing-ticket rules. Issue also
         supports ``priority``, ``issue_type``, and ``severity``.
         """
-        project_id = self._resolver.resolve_project(issue.project)
-
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, modified_date, assigned_to_id, milestone_id"
-                " FROM issues_issue WHERE project_id = %s AND ref = %s",
-                (project_id, ref),
+        project_id, object_id, (current_assigned_to, current_milestone) = (
+            self._fetch_for_update(
+                issue.project,
+                ref,
+                ["assigned_to_id", "milestone_id"],
+                last_pushed_at,
+                ignore_conflict,
             )
-            row = cur.fetchone()
-
-        if row is None:
-            raise TicketMissingError(
-                f"issue #{ref} not found in project '{issue.project}'"
-            )
-
-        object_id, taiga_modified, current_assigned_to, current_milestone = row
-
-        if not ignore_conflict:
-            check_taiga_conflict(taiga_modified, parse_taiga_timestamp(last_pushed_at))
+        )
 
         check_field_cleared("assignee", metadata_keys, current_assigned_to)
         check_field_cleared("milestone", metadata_keys, current_milestone)
