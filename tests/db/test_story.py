@@ -118,3 +118,29 @@ class TestStoryWriter:
         )
 
         assert ref > 0
+
+    def test_is_closed_matches_status_on_insert(self, real_conn):
+        """Setup: two stories inserted — one with default status ('New',
+            open) and one with 'Done' (closed).
+        Expectations: userstories_userstory.is_closed mirrors the status's
+            is_closed flag for each row (fix for #56).
+        """
+        make_project(real_conn)
+        writer = StoryWriter(real_conn, Resolver(real_conn))
+
+        open_ref = writer.write(
+            Story(project="test-project", subject="open"), "admin",
+        )
+        closed_ref = writer.write(
+            Story(project="test-project", subject="closed", status="Done"), "admin",
+        )
+
+        with real_conn.cursor() as cur:
+            cur.execute(
+                "SELECT ref, is_closed FROM userstories_userstory"
+                " WHERE ref IN (%s, %s) ORDER BY ref",
+                (open_ref, closed_ref),
+            )
+            rows = cur.fetchall()
+
+        assert rows == [(open_ref, False), (closed_ref, True)]

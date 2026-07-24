@@ -75,6 +75,32 @@ class Resolver:
 
         return row[0]
 
+    def status_is_closed(self, status_id: int, ticket_type: str) -> bool:
+        """Return the ``is_closed`` flag for a resolved status ID.
+
+        Writers that mirror their own row's ``is_closed`` column from the
+        status (E12 #56) call this after resolving the status ID. Kept
+        separate from ``resolve_status`` so callers that don't need the
+        flag pay nothing.
+        """
+        table = STATUS_TABLES.get(ticket_type)
+        if table is None:
+            raise ResolveError(f"Unknown ticket type '{ticket_type}'")
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                f"SELECT is_closed FROM {table} WHERE id = %s",
+                (status_id,),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            raise ResolveError(
+                f"Status id {status_id} not found in {table}"
+            )
+
+        return row[0]
+
     def resolve_default_status(self, project_id: int, ticket_type: str) -> int:
         """Look up the default status ID for the given project and ticket type.
 

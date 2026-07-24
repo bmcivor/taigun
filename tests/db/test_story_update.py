@@ -168,6 +168,39 @@ class TestStoryUpdate:
 
         assert assigned_to_id is None
 
+    def test_update_syncs_is_closed_when_status_changes(
+        self, real_conn: psycopg2.extensions.connection
+    ) -> None:
+        """Setup: story inserted with default (open) status; updated to
+            'Done' (closed).
+        Expectations: userstories_userstory.is_closed flips from false to
+            true — the UPDATE writes the status's is_closed flag (fix #56).
+        """
+        make_project(real_conn)
+        ref = _push_story(real_conn)
+
+        with real_conn.cursor() as cur:
+            cur.execute(
+                "SELECT is_closed FROM userstories_userstory WHERE ref = %s",
+                (ref,),
+            )
+            assert cur.fetchone() == (False,)
+
+        StoryWriter(real_conn, Resolver(real_conn)).update(
+            Story(project="test-project", subject="s", status="Done"),
+            ref=ref,
+            metadata_keys={"type", "project", "status"},
+            acting_user="admin",
+            last_pushed_at=_now_iso(),
+        )
+
+        with real_conn.cursor() as cur:
+            cur.execute(
+                "SELECT is_closed FROM userstories_userstory WHERE ref = %s",
+                (ref,),
+            )
+            assert cur.fetchone() == (True,)
+
 
 def _now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat(
