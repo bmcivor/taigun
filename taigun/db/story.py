@@ -30,6 +30,7 @@ class StoryWriter(BaseWriter):
             Allocated ref number.
         """
         project_id, owner_id, status_id, now = self._resolve_common(story, acting_user)
+        is_closed = self._resolver.status_is_closed(status_id, self._ticket_type)
         order = int(now.timestamp())
 
         assigned_to_id: Optional[int] = None
@@ -49,7 +50,7 @@ class StoryWriter(BaseWriter):
                 "  is_blocked, blocked_note, is_closed, tags,"
                 "  client_requirement, team_requirement, due_date_reason)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, %s, 1, %s, %s, %s,"
-                "         false, '', false, %s, false, false, '')"
+                "         false, '', %s, %s, false, false, '')"
                 " RETURNING id",
                 (
                     story.subject,
@@ -64,6 +65,7 @@ class StoryWriter(BaseWriter):
                     order,
                     order,
                     order,
+                    is_closed,
                     story.tags or [],
                 ),
             )
@@ -144,6 +146,7 @@ class StoryWriter(BaseWriter):
         check_field_cleared("epic", metadata_keys, current_epic)
 
         status_id = self._resolve_status(project_id, story.status)
+        is_closed = self._resolver.status_is_closed(status_id, self._ticket_type)
 
         assigned_to_id: Optional[int] = None
         if story.assignee is not None:
@@ -163,6 +166,7 @@ class StoryWriter(BaseWriter):
             cur.execute(
                 "UPDATE userstories_userstory"
                 " SET subject = %s, description = %s, status_id = %s,"
+                "     is_closed = %s,"
                 "     assigned_to_id = %s, milestone_id = %s, tags = %s,"
                 "     modified_date = %s, version = version + 1"
                 " WHERE id = %s",
@@ -170,6 +174,7 @@ class StoryWriter(BaseWriter):
                     story.subject,
                     story.description,
                     status_id,
+                    is_closed,
                     assigned_to_id,
                     milestone_id,
                     story.tags or [],
