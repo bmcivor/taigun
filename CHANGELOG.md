@@ -1,6 +1,34 @@
 # CHANGELOG
 
 
+## v2.1.1 (2026-07-27)
+
+### Bug Fixes
+
+- Ensure that the version of taigun tracked in uv is kept aligned
+  ([`4977faf`](https://github.com/bmcivor/taigun/commit/4977faf2c2be76e66a378e7e5ce6abc543fdb066))
+
+- Mask profile password from repr output
+  ([`e0ac3e1`](https://github.com/bmcivor/taigun/commit/e0ac3e19e70d08bf8a6c000333b5a9faa489f416))
+
+This isn't that big of a deal, but we should be following safe practices of not just blasting out
+  somebodies password in prints or logs, in the future. If that ever becomes a thing.
+
+- Streamline update methodolody to common helpers
+  ([`013f17e`](https://github.com/bmcivor/taigun/commit/013f17e31e4684c10c82b099e15aa9c1bf40639d))
+
+- Update is_closed status handling for story
+  ([`f0b3d33`](https://github.com/bmcivor/taigun/commit/f0b3d3358c0be1aa2c74be8f2bb192943d2fbbb2))
+
+- Use --no-cache during release process
+  ([`6469887`](https://github.com/bmcivor/taigun/commit/6469887ac7d865686bde9eac194a3913020ce887))
+
+### Chores
+
+- Update skill knowledge for AI
+  ([`4775fde`](https://github.com/bmcivor/taigun/commit/4775fde6a002cc4efa49952bd9ca1f167cdb294e))
+
+
 ## v2.1.0 (2026-07-22)
 
 ### Chores
