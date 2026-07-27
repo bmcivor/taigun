@@ -1,6 +1,6 @@
 import tomllib
 import tomli_w
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Optional
 
@@ -11,7 +11,7 @@ class Profile:
     port: int
     database: str
     username: str
-    password: str
+    password: str = field(repr=False)
     acting_user: str
 
 
