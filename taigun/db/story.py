@@ -2,12 +2,7 @@ import datetime
 from typing import Optional
 
 from taigun.db.base import BaseWriter
-from taigun.db.update_helpers import (
-    check_field_cleared,
-    check_taiga_conflict,
-    parse_taiga_timestamp,
-)
-from taigun.exceptions import TicketMissingError
+from taigun.db.update_helpers import check_field_cleared
 from taigun.models import Story
 
 
@@ -127,25 +122,15 @@ class StoryWriter(BaseWriter):
             FieldClearedError: A previously-set field was omitted without an
                 explicit null.
         """
-        project_id = self._resolver.resolve_project(story.project)
-
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, modified_date, assigned_to_id, milestone_id"
-                " FROM userstories_userstory WHERE project_id = %s AND ref = %s",
-                (project_id, ref),
+        project_id, object_id, (current_assigned_to, current_milestone) = (
+            self._fetch_for_update(
+                story.project,
+                ref,
+                ["assigned_to_id", "milestone_id"],
+                last_pushed_at,
+                ignore_conflict,
             )
-            row = cur.fetchone()
-
-        if row is None:
-            raise TicketMissingError(
-                f"story #{ref} not found in project '{story.project}'"
-            )
-
-        object_id, taiga_modified, current_assigned_to, current_milestone = row
-
-        if not ignore_conflict:
-            check_taiga_conflict(taiga_modified, parse_taiga_timestamp(last_pushed_at))
+        )
 
         with self._conn.cursor() as cur:
             cur.execute(
