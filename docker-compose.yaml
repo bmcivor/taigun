@@ -49,6 +49,13 @@ services:
     environment:
       TEST_DB_URL: postgresql://taiga:taiga@test-db:5432/taiga
 
+  lint:
+    build:
+      context: .
+      target: test
+    volumes:
+      - .:/app
+
   release:
     build:
       context: .
