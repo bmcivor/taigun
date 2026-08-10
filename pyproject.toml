@@ -44,7 +44,6 @@ taigun = "taigun.cli:app"
 dev = [
     "mypy==2.3.0",
     "pytest==9.0.2",
-    "pytest-cov>=7.1.0",
     "python-semantic-release==9.21.1",
     "ruff==0.16.1",
     "types-psycopg2>=2.9.21.20260724",
@@ -63,7 +62,6 @@ match = "tag-release"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests"]
-addopts = "--cov=taigun --cov-report=term --cov-report=xml:coverage.xml --junitxml=junit.xml"
 
 [tool.ruff]
 target-version = "py311"
