@@ -28,19 +28,12 @@ sidecar decides which: files with an entry are updates, files without are insert
 
 | Option | Effect |
 |---|---|
-| `--dry-run` | Parse and resolve all FKs, then roll back instead of committing |
+| `--dry-run` | Load the sidecar and report the would-be action per file (insert / unchanged / would update). No rows written, no ref-sequence advance. |
 | `--force` | Skip the conflict and missing-in-Taiga prompts (overwrite / re-insert automatically) |
 | `--profile` | Connection profile to use |
 
 Files are processed in order; a failure prints an error and continues with the
 next file.
-
-!!! warning "`--dry-run` consumes ref numbers"
-    Dry-run runs the full write path and rolls the transaction back — but
-    PostgreSQL sequence advances survive rollback, so each dry-run insert
-    permanently burns a ref number from the project's sequence. Real tickets
-    pushed later will have gaps in their numbering. Known limitation; avoid
-    dry-running against a project whose ref continuity you care about.
 
 ### Output vocabulary
 
@@ -56,6 +49,8 @@ One line per file:
 | `↷ #42 story: skipped (Taiga was edited)` | Conflict prompt declined |
 | `↷ story: skipped (not in Taiga, user declined re-insert)` | Re-insert prompt declined |
 | `~ story: "Title"` | Dry-run — would insert |
+| `~ (unchanged) #42 story: "Title"` | Dry-run — content matches sidecar; would be a no-op |
+| `~ #42 story: "Title" (would update)` | Dry-run — content differs from sidecar; would update in Taiga |
 | `✗ file.md: <error>` | Failed (parse error, unknown project, missing user, …) |
 
 ### Exit codes

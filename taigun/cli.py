@@ -121,7 +121,7 @@ def push(
     manager = ConnectionManager(config)
     any_failed = False
 
-    if files and not dry_run:
+    if files:
         sidecar_path = locate_sidecar(Path(files[0]).resolve().parent)
         state = StateFile(sidecar_path)
         state.load()
@@ -139,7 +139,7 @@ def push(
 
             entry = state.find(path) if state is not None else None
 
-            if entry is None or dry_run:
+            if entry is None:
                 _handle_insert(
                     path, ticket, ticket_type, writer_class,
                     manager, config, state, dry_run,
@@ -147,7 +147,7 @@ def push(
             else:
                 _handle_upsert(
                     path, ticket, ticket_type, writer_class,
-                    metadata_keys, entry, manager, config, state, force,
+                    metadata_keys, entry, manager, config, state, force, dry_run,
                 )
 
         except Exception as e:
@@ -155,7 +155,7 @@ def push(
             any_failed = True
             continue
 
-    if state is not None:
+    if state is not None and not dry_run:
         state.save()
 
     if any_failed:
@@ -172,13 +172,24 @@ def _handle_insert(
     state: Optional[StateFile],
     dry_run: bool,
 ) -> None:
-    """Insert a new ticket and record it in the sidecar."""
-    with manager.connect(dry_run=dry_run) as conn:
+    """Insert a new ticket and record it in the sidecar.
+
+    On dry-run: resolve the project (validates it exists — cheap SELECT)
+    and print the would-insert line. The actual INSERT is skipped so the
+    per-project ref sequence is not advanced (E12 #57).
+    """
+    if dry_run:
+        with manager.connect(dry_run=True) as conn:
+            Resolver(conn).resolve_project(ticket.project)
+        typer.echo(f"~ {ticket_type}: \"{ticket.subject}\"")
+        return
+
+    with manager.connect() as conn:
         resolver = Resolver(conn)
         writer = writer_class(conn, resolver)
         ref = writer.write(ticket, config.acting_user)
 
-    if state is not None and not dry_run:
+    if state is not None:
         state.record(
             path,
             project=ticket.project,
@@ -187,9 +198,7 @@ def _handle_insert(
             content_hash=hash_file(path),
         )
 
-    if dry_run:
-        typer.echo(f"~ {ticket_type}: \"{ticket.subject}\"")
-    elif ticket_type == "milestone":
+    if ticket_type == "milestone":
         typer.echo(f"✓ {ticket_type}: \"{ticket.subject}\"")
     else:
         typer.echo(f"✓ #{ref} {ticket_type}: \"{ticket.subject}\"")
@@ -206,9 +215,16 @@ def _handle_upsert(
     config: Profile,
     state: StateFile,
     force: bool,
+    dry_run: bool = False,
 ) -> None:
     """Update an existing ticket (identified via the sidecar entry) or, on a
     missing-in-Taiga prompt confirmation, re-insert it.
+
+    On dry-run: report what the real push would do based on the identity
+    triple and content-hash comparison. Skips the writer.update() /
+    writer.write() calls so no rows are touched (E12 #57). Missing-in-Taiga
+    and conflict prompts are not surfaced in dry-run — those need a live
+    DB round-trip and interactive confirmation that dry-run shouldn't do.
     """
     if entry.project != ticket.project:
         raise IdentityChangeError(
@@ -225,7 +241,12 @@ def _handle_upsert(
 
     current_hash = hash_file(path)
     if current_hash == entry.content_hash:
-        typer.echo(f"(unchanged) {ref_label}{ticket_type}: \"{ticket.subject}\"")
+        prefix = "~ " if dry_run else ""
+        typer.echo(f"{prefix}(unchanged) {ref_label}{ticket_type}: \"{ticket.subject}\"")
+        return
+
+    if dry_run:
+        typer.echo(f"~ {ref_label}{ticket_type}: \"{ticket.subject}\" (would update)")
         return
 
     with manager.connect() as conn:

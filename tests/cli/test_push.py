@@ -134,6 +134,93 @@ class TestPushSuccess:
         assert result.exit_code == 0
         assert result.output == '~ story: "Dry"\n'
 
+    def test_dry_run_does_not_advance_ref_sequence(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: real push #A, then dry-run in between, then real push #B.
+        Expectations: ref #B is exactly ref #A + 1 — dry-run must not
+            consume a ref by INSERTing and rolling back (E12 #57).
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+
+        first = write_ticket(tmp_path, "first.md", "story", slug, subject="First")
+        with patch_config(config):
+            first_result = runner.invoke(app, ["push", str(first)])
+        ref_first = _ref_from_insert_output(first_result.output)
+
+        dry = write_ticket(tmp_path, "dry.md", "story", slug, subject="Dry")
+        with patch_config(config):
+            runner.invoke(app, ["push", "--dry-run", str(dry)])
+
+        second = write_ticket(tmp_path, "second.md", "story", slug, subject="Second")
+        with patch_config(config):
+            second_result = runner.invoke(app, ["push", str(second)])
+        ref_second = _ref_from_insert_output(second_result.output)
+
+        assert ref_second == ref_first + 1
+
+    def test_dry_run_on_existing_unchanged_entry_reports_would_no_op(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: file pushed once; then --dry-run against the same file
+            (sidecar entry exists, content hash matches).
+        Expectations: `~ (unchanged) #<ref> story: "Same"` — dry-run
+            dispatches to the update path and reports the no-op (E12 #57).
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+        ticket = write_ticket(tmp_path, "same.md", "story", slug, subject="Same")
+
+        with patch_config(config):
+            first = runner.invoke(app, ["push", str(ticket)])
+        ref = _ref_from_insert_output(first.output)
+
+        with patch_config(config):
+            dry = runner.invoke(app, ["push", "--dry-run", str(ticket)])
+
+        assert dry.exit_code == 0
+        assert dry.output == f'~ (unchanged) #{ref} story: "Same"\n'
+
+    def test_dry_run_on_existing_changed_entry_reports_would_update(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: file pushed once; then the file is edited (subject change);
+            --dry-run against the edited file.
+        Expectations: `~ #<ref> story: "Changed" (would update)` — dry-run
+            dispatches to the update path and reports the pending update
+            (E12 #57). No actual UPDATE is issued.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+        ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Original")
+
+        with patch_config(config):
+            first = runner.invoke(app, ["push", str(ticket)])
+        ref = _ref_from_insert_output(first.output)
+
+        ticket.write_text(
+            f"---\ntype: story\nproject: {slug}\n---\n\n## Changed\n"
+        )
+
+        with patch_config(config):
+            dry = runner.invoke(app, ["push", "--dry-run", str(ticket)])
+
+        assert dry.exit_code == 0
+        assert dry.output == f'~ #{ref} story: "Changed" (would update)\n'
+
+        with cli_conn.cursor() as cur:
+            cur.execute(
+                "SELECT subject FROM userstories_userstory WHERE ref = %s",
+                (ref,),
+            )
+            (subject,) = cur.fetchone()
+
+        assert subject == "Original"
+
     def test_partial_failure_exits_one(self, tmp_path, test_db_profile, cli_conn):
         """Setup: project committed; one valid ticket and one malformed file.
         Expectations: exit 1; output contains both a success line and an
