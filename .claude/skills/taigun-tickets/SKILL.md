@@ -65,7 +65,7 @@ uv run --project ~/Development/Lab/taigun taigun push <project>/epics/*/epic.md
 uv run --project ~/Development/Lab/taigun taigun push <project>/epics/*/tickets/*.md
 ```
 
-**Do not use `--dry-run` against the lab.** It permanently consumes ref numbers (sequence advances survive rollback) and misreports would-be updates as inserts — taigun ticket 045 (E12). Skip dry-run until that lands.
+**`--dry-run` is safe** — it loads the sidecar, reports `~ would insert` / `~ (unchanged) #N` / `~ #N (would update)` per file, and does not touch rows or advance the ref sequence. Use it freely for previewing multi-file pushes.
 
 ## Updating
 
