@@ -13,11 +13,14 @@ from taigun.db.project import ProjectCreator, ProjectExistsError, ProjectUpdater
 from taigun.db.story import StoryWriter
 from taigun.db.task import TaskWriter
 from taigun.exceptions import (
+    ConfigError,
+    DatabaseConnectionError,
     IdentityChangeError,
     MilestoneConflictError,
     MilestoneMissingError,
     ProjectMissingError,
     ResolveError,
+    TaigunError,
     TicketConflictError,
     TicketMissingError,
 )
@@ -86,7 +89,7 @@ def configure(
     try:
         with ConnectionManager(new_profile).connect():
             pass
-    except SystemExit as e:
+    except DatabaseConnectionError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1)
 
@@ -115,7 +118,7 @@ def push(
     are a no-op. Modified-date drift and missing-in-Taiga cases prompt the user
     unless ``--force`` is set.
     """
-    config = ConfigManager().load(profile)
+    config = _load_config(profile)
     parser = FileParser()
     fm_parser = FrontmatterParser()
     manager = ConnectionManager(config)
@@ -128,35 +131,36 @@ def push(
     else:
         state = None
 
-    for path in files:
-        try:
-            ticket = parser.parse(path)
-            ticket_type = type(ticket).__name__.lower()
-            writer_class = _WRITERS[ticket_type]
+    try:
+        for path in files:
+            try:
+                ticket = parser.parse(path)
+                ticket_type = type(ticket).__name__.lower()
+                writer_class = _WRITERS[ticket_type]
 
-            metadata, _ = fm_parser.parse(Path(path).read_text())
-            metadata_keys = set(metadata.keys())
+                metadata, _ = fm_parser.parse(Path(path).read_text())
+                metadata_keys = set(metadata.keys())
 
-            entry = state.find(path) if state is not None else None
+                entry = state.find(path) if state is not None else None
 
-            if entry is None:
-                _handle_insert(
-                    path, ticket, ticket_type, writer_class,
-                    manager, config, state, dry_run,
-                )
-            else:
-                _handle_upsert(
-                    path, ticket, ticket_type, writer_class,
-                    metadata_keys, entry, manager, config, state, force, dry_run,
-                )
+                if entry is None:
+                    _handle_insert(
+                        path, ticket, ticket_type, writer_class,
+                        manager, config, state, dry_run,
+                    )
+                else:
+                    _handle_upsert(
+                        path, ticket, ticket_type, writer_class,
+                        metadata_keys, entry, manager, config, state, force, dry_run,
+                    )
 
-        except Exception as e:
-            typer.echo(f"✗ {Path(path).name}: {e}", err=True)
-            any_failed = True
-            continue
-
-    if state is not None and not dry_run:
-        state.save()
+            except TaigunError as e:
+                typer.echo(f"✗ {Path(path).name}: {e}", err=True)
+                any_failed = True
+                continue
+    finally:
+        if state is not None and not dry_run:
+            state.save()
 
     if any_failed:
         raise typer.Exit(code=1)
@@ -312,19 +316,16 @@ def projects_create(
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
 ) -> None:
     """Create a new Taiga project."""
-    config = ConfigManager().load(profile)
+    config = _load_config(profile)
 
-    with ConnectionManager(config).connect() as conn:
-        resolver = Resolver(conn)
-        creator = ProjectCreator(conn, resolver)
-        try:
+    try:
+        with ConnectionManager(config).connect() as conn:
+            resolver = Resolver(conn)
+            creator = ProjectCreator(conn, resolver)
             project_id, project_slug = creator.create(name, slug, config.acting_user)
-        except ProjectExistsError as e:
-            typer.echo(str(e), err=True)
-            raise typer.Exit(code=1)
-        except ResolveError as e:
-            typer.echo(str(e), err=True)
-            raise typer.Exit(code=1)
+    except (DatabaseConnectionError, ProjectExistsError, ResolveError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1)
 
     typer.echo(f"Created project #{project_id}: {project_slug}")
 
@@ -344,15 +345,15 @@ def projects_update(
         typer.echo("Nothing to update: pass --name and/or --description.", err=True)
         raise typer.Exit(code=1)
 
-    config = ConfigManager().load(profile)
+    config = _load_config(profile)
 
-    with ConnectionManager(config).connect() as conn:
-        updater = ProjectUpdater(conn)
-        try:
+    try:
+        with ConnectionManager(config).connect() as conn:
+            updater = ProjectUpdater(conn)
             updater.update(slug, name=name, description=description)
-        except ProjectMissingError as e:
-            typer.echo(str(e), err=True)
-            raise typer.Exit(code=1)
+    except (DatabaseConnectionError, ProjectMissingError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1)
 
     typer.echo(f"Updated project '{slug}'")
 
@@ -362,11 +363,15 @@ def projects_list(
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
 ) -> None:
     """List all projects on the configured instance."""
-    config = ConfigManager().load(profile)
+    config = _load_config(profile)
 
-    with ConnectionManager(config).connect() as conn:
-        lister = Lister(conn)
-        projects = lister.list_projects()
+    try:
+        with ConnectionManager(config).connect() as conn:
+            lister = Lister(conn)
+            projects = lister.list_projects()
+    except DatabaseConnectionError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1)
 
     for name, slug in projects:
         typer.echo(f"{name} ({slug})")
@@ -378,17 +383,16 @@ def epics_list(
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
 ) -> None:
     """List all epics in a project."""
-    config = ConfigManager().load(profile)
-    with ConnectionManager(config).connect() as conn:
-        resolver = Resolver(conn)
-        lister = Lister(conn)
-        try:
+    config = _load_config(profile)
+    try:
+        with ConnectionManager(config).connect() as conn:
+            resolver = Resolver(conn)
+            lister = Lister(conn)
             project_id = resolver.resolve_project(project_slug)
-        except ResolveError as e:
-            typer.echo(str(e), err=True)
-            raise typer.Exit(code=1)
-
-        epics = lister.list_epics(project_id)
+            epics = lister.list_epics(project_id)
+    except (DatabaseConnectionError, ResolveError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1)
 
     for ref, subject in epics:
         typer.echo(f"#{ref}  {subject}")
@@ -400,17 +404,16 @@ def statuses_list(
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
 ) -> None:
     """List statuses grouped by ticket type for a project."""
-    config = ConfigManager().load(profile)
-    with ConnectionManager(config).connect() as conn:
-        resolver = Resolver(conn)
-        lister = Lister(conn)
-        try:
+    config = _load_config(profile)
+    try:
+        with ConnectionManager(config).connect() as conn:
+            resolver = Resolver(conn)
+            lister = Lister(conn)
             project_id = resolver.resolve_project(project_slug)
-        except ResolveError as e:
-            typer.echo(str(e), err=True)
-            raise typer.Exit(code=1)
-
-        statuses = lister.list_statuses(project_id)
+            statuses = lister.list_statuses(project_id)
+    except (DatabaseConnectionError, ResolveError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1)
 
     for ticket_type, status_list in statuses.items():
         typer.echo(f"{ticket_type}:")
@@ -419,9 +422,18 @@ def statuses_list(
             typer.echo(f"  {name}{suffix}")
 
 
+def _load_config(profile: Optional[str]) -> Profile:
+    """Load a connection profile, translating ConfigError to a clean Exit(1)."""
+    try:
+        return ConfigManager().load(profile)
+    except ConfigError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1)
+
+
 def _profile_exists(config: ConfigManager, profile: str) -> bool:
     try:
         config.load(None if profile == "default" else profile)
         return True
-    except SystemExit:
+    except ConfigError:
         return False

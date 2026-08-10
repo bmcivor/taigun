@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from typing import Callable, Generator, Optional
 
 from taigun.config import Profile
+from taigun.exceptions import DatabaseConnectionError
 
 
 class ConnectionManager:
@@ -37,7 +38,7 @@ class ConnectionManager:
             An open psycopg2 connection.
 
         Raises:
-            SystemExit: If the connection cannot be established.
+            DatabaseConnectionError: If the connection cannot be established.
         """
         try:
             conn = self._connect(
@@ -48,7 +49,7 @@ class ConnectionManager:
                 password=self._config.password,
             )
         except psycopg2.OperationalError as e:
-            raise SystemExit(f"Could not connect to database: {e}")
+            raise DatabaseConnectionError(f"Could not connect to database: {e}")
 
         try:
             yield conn

@@ -1,6 +1,7 @@
 import pytest
 
 from taigun.db import RefAllocator
+from taigun.exceptions import RefAllocationError
 from taigun.resolver import Resolver
 
 from factories import make_project
@@ -33,9 +34,9 @@ class TestRefAllocator:
 
 
 class TestRefAllocatorMissingSequence:
-    def test_missing_sequence_raises_system_exit(self, real_conn):
+    def test_missing_sequence_raises_ref_allocation_error(self, real_conn):
         """Setup: project ID with no corresponding ref sequence.
-        Expectations: SystemExit raised with project ID in the message.
+        Expectations: RefAllocationError raised with project ID in the message.
         """
-        with pytest.raises(SystemExit, match="project 99999"):
+        with pytest.raises(RefAllocationError, match="project 99999"):
             RefAllocator(real_conn).allocate(99999, 1, 1)

@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 from taigun.config import Profile
 from taigun.db import ConnectionManager
+from taigun.exceptions import DatabaseConnectionError
 
 
 PROFILE = Profile(
@@ -85,14 +86,14 @@ class TestConnectionManager:
 
         mock_conn.close.assert_called_once()
 
-    def test_connection_error_raises_system_exit(self):
+    def test_connection_error_raises_database_connection_error(self):
         """Setup: factory raises OperationalError.
-        Expectations: SystemExit raised with a clear message.
+        Expectations: DatabaseConnectionError raised with a clear message.
         """
         factory = MagicMock(side_effect=psycopg2.OperationalError("timeout"))
         manager = ConnectionManager(PROFILE, _connection_factory=factory)
 
-        with pytest.raises(SystemExit, match="Could not connect"):
+        with pytest.raises(DatabaseConnectionError, match="Could not connect"):
             with manager.connect():
                 pass
 
