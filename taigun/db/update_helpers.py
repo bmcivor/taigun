@@ -5,6 +5,7 @@ focused on their INSERT/UPDATE shape. Callers pass the exception class
 they want raised so ticket / milestone / project entities can each carry
 their own error types.
 """
+
 import datetime
 from typing import Type
 

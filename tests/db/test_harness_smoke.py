@@ -3,6 +3,7 @@
 Confirm that `real_conn` is reachable and that baseline data populated by
 `test-db-init` is queryable via taigun's app code (no raw SQL).
 """
+
 from taigun.db.lister import Lister
 from taigun.resolver import Resolver
 

@@ -22,7 +22,9 @@ class MilestoneWriter:
     Must be used within a transaction managed by ConnectionManager.
     """
 
-    def __init__(self, conn: psycopg2.extensions.connection, resolver: Resolver) -> None:
+    def __init__(
+        self, conn: psycopg2.extensions.connection, resolver: Resolver
+    ) -> None:
         self._conn = conn
         self._resolver = resolver
 
@@ -50,9 +52,9 @@ class MilestoneWriter:
         with self._conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO milestones_milestone"
-                ' (name, slug, estimated_start, estimated_finish,'
+                " (name, slug, estimated_start, estimated_finish,"
                 '  created_date, modified_date, closed, "order",'
-                '  project_id, owner_id)'
+                "  project_id, owner_id)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 " RETURNING id",
                 (

@@ -14,11 +14,15 @@ class TestProjectUpdater:
         Expectations: name and description overwritten in DB.
         """
         ProjectCreator(real_conn, Resolver(real_conn)).create(
-            "Original", "test-project", "admin",
+            "Original",
+            "test-project",
+            "admin",
         )
 
         ProjectUpdater(real_conn).update(
-            "test-project", name="Renamed", description="New body",
+            "test-project",
+            name="Renamed",
+            description="New body",
         )
 
         with real_conn.cursor() as cur:
@@ -37,7 +41,9 @@ class TestProjectUpdater:
         Expectations: name unchanged; description updated.
         """
         ProjectCreator(real_conn, Resolver(real_conn)).create(
-            "Original", "test-project", "admin",
+            "Original",
+            "test-project",
+            "admin",
         )
 
         ProjectUpdater(real_conn).update("test-project", description="Docs only")
@@ -67,7 +73,9 @@ class TestProjectUpdater:
         Expectations: no change; no error.
         """
         ProjectCreator(real_conn, Resolver(real_conn)).create(
-            "Original", "test-project", "admin",
+            "Original",
+            "test-project",
+            "admin",
         )
 
         ProjectUpdater(real_conn).update("test-project")

@@ -1,12 +1,11 @@
+from unittest.mock import MagicMock
+
 import psycopg2
 import pytest
-
-from unittest.mock import MagicMock
 
 from taigun.config import Profile
 from taigun.db import ConnectionManager
 from taigun.exceptions import DatabaseConnectionError
-
 
 PROFILE = Profile(
     host="localhost",
@@ -30,7 +29,9 @@ class TestConnectionManager:
         Expectations: context manager yields the connection object.
         """
         mock_conn = MagicMock()
-        manager = ConnectionManager(PROFILE, _connection_factory=_factory_returning(mock_conn))
+        manager = ConnectionManager(
+            PROFILE, _connection_factory=_factory_returning(mock_conn)
+        )
 
         with manager.connect() as conn:
             assert conn is mock_conn
@@ -40,7 +41,9 @@ class TestConnectionManager:
         Expectations: commit is called on the connection.
         """
         mock_conn = MagicMock()
-        manager = ConnectionManager(PROFILE, _connection_factory=_factory_returning(mock_conn))
+        manager = ConnectionManager(
+            PROFILE, _connection_factory=_factory_returning(mock_conn)
+        )
 
         with manager.connect():
             pass
@@ -52,7 +55,9 @@ class TestConnectionManager:
         Expectations: rollback is called and exception is re-raised.
         """
         mock_conn = MagicMock()
-        manager = ConnectionManager(PROFILE, _connection_factory=_factory_returning(mock_conn))
+        manager = ConnectionManager(
+            PROFILE, _connection_factory=_factory_returning(mock_conn)
+        )
 
         with pytest.raises(RuntimeError):
             with manager.connect():
@@ -66,7 +71,9 @@ class TestConnectionManager:
         Expectations: connection is closed.
         """
         mock_conn = MagicMock()
-        manager = ConnectionManager(PROFILE, _connection_factory=_factory_returning(mock_conn))
+        manager = ConnectionManager(
+            PROFILE, _connection_factory=_factory_returning(mock_conn)
+        )
 
         with manager.connect():
             pass
@@ -78,7 +85,9 @@ class TestConnectionManager:
         Expectations: connection is still closed.
         """
         mock_conn = MagicMock()
-        manager = ConnectionManager(PROFILE, _connection_factory=_factory_returning(mock_conn))
+        manager = ConnectionManager(
+            PROFILE, _connection_factory=_factory_returning(mock_conn)
+        )
 
         with pytest.raises(RuntimeError):
             with manager.connect():
@@ -102,7 +111,9 @@ class TestConnectionManager:
         Expectations: rollback called, commit not called.
         """
         mock_conn = MagicMock()
-        manager = ConnectionManager(PROFILE, _connection_factory=_factory_returning(mock_conn))
+        manager = ConnectionManager(
+            PROFILE, _connection_factory=_factory_returning(mock_conn)
+        )
 
         with manager.connect(dry_run=True):
             pass
@@ -115,7 +126,9 @@ class TestConnectionManager:
         Expectations: commit called, rollback not called.
         """
         mock_conn = MagicMock()
-        manager = ConnectionManager(PROFILE, _connection_factory=_factory_returning(mock_conn))
+        manager = ConnectionManager(
+            PROFILE, _connection_factory=_factory_returning(mock_conn)
+        )
 
         with manager.connect(dry_run=False):
             pass

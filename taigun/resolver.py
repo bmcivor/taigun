@@ -3,7 +3,6 @@ from typing import Optional
 
 from taigun.exceptions import ResolveError
 
-
 logger = logging.getLogger(__name__)
 
 STATUS_TABLES = {
@@ -95,9 +94,7 @@ class Resolver:
             row = cur.fetchone()
 
         if row is None:
-            raise ResolveError(
-                f"Status id {status_id} not found in {table}"
-            )
+            raise ResolveError(f"Status id {status_id} not found in {table}")
 
         return row[0]
 
@@ -171,7 +168,9 @@ class Resolver:
 
             logger.warning(
                 "Status '%s' not found for project %d (%s), falling back to default",
-                name, project_id, ticket_type,
+                name,
+                project_id,
+                ticket_type,
             )
 
         return self.resolve_default_status(project_id, ticket_type)
@@ -206,7 +205,9 @@ class Resolver:
                 return row[0]
 
             logger.warning(
-                "Priority '%s' not found for project %d, falling back to default", name, project_id
+                "Priority '%s' not found for project %d, falling back to default",
+                name,
+                project_id,
             )
 
         with self._conn.cursor() as cur:

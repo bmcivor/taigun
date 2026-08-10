@@ -22,7 +22,9 @@ class BaseWriter(ABC):
         self._conn = conn
         self._resolver = resolver
 
-    def _resolve_common(self, ticket, acting_user: str) -> tuple[int, int, int, datetime.datetime]:
+    def _resolve_common(
+        self, ticket, acting_user: str
+    ) -> tuple[int, int, int, datetime.datetime]:
         """Resolve the fields common to every ticket type.
 
         Args:

@@ -35,7 +35,9 @@ class RefAllocator:
                 cur.execute(f"SELECT nextval('{sequence}')")
                 ref = cur.fetchone()[0]
         except psycopg2.errors.UndefinedTable:
-            raise RefAllocationError(f"Ref sequence for project {project_id} does not exist")
+            raise RefAllocationError(
+                f"Ref sequence for project {project_id} does not exist"
+            )
 
         with self._conn.cursor() as cur:
             cur.execute(

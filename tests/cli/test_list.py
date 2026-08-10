@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 from typer.testing import CliRunner
 
 from taigun.cli import app
@@ -83,7 +82,9 @@ class TestStatusesListWithProject:
             ("story:", "task:", "issue:", "epic:").
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
 
         with patch_config(config):
@@ -91,7 +92,9 @@ class TestStatusesListWithProject:
 
         assert result.exit_code == 0
         lines = result.output.splitlines()
-        headers = [line for line in lines if line in {"story:", "task:", "issue:", "epic:"}]
+        headers = [
+            line for line in lines if line in {"story:", "task:", "issue:", "epic:"}
+        ]
         assert headers == ["story:", "task:", "issue:", "epic:"]
 
 
@@ -101,7 +104,9 @@ class TestEpicsList:
         Expectations: exit 0; empty output.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
 
         with patch_config(config):
@@ -115,7 +120,9 @@ class TestEpicsList:
         Expectations: output contains a line ending with the epic's subject.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         epic_ref = EpicWriter(cli_conn, Resolver(cli_conn)).write(
             Epic(project=slug, subject="Big feature"), "admin"
         )
@@ -129,12 +136,16 @@ class TestEpicsList:
 
 
 class TestProfileFlagOnListCommands:
-    def test_projects_list_uses_named_profile(self, tmp_path, test_db_profile, cli_conn):
+    def test_projects_list_uses_named_profile(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
         """Setup: 'work' profile with test-db creds; bad default profile.
         Expectations: `projects list --profile work` exits 0.
         """
         config = ConfigManager(path=tmp_path / "config.toml")
-        bad_default = Profile("nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin")
+        bad_default = Profile(
+            "nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin"
+        )
         config.save(bad_default, name=None)
         config.save(test_db_profile, name="work")
 
@@ -148,9 +159,13 @@ class TestProfileFlagOnListCommands:
         Expectations: `epics list <slug> --profile work` exits 0.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = ConfigManager(path=tmp_path / "config.toml")
-        bad_default = Profile("nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin")
+        bad_default = Profile(
+            "nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin"
+        )
         config.save(bad_default, name=None)
         config.save(test_db_profile, name="work")
 
@@ -159,14 +174,20 @@ class TestProfileFlagOnListCommands:
 
         assert result.exit_code == 0
 
-    def test_statuses_list_uses_named_profile(self, tmp_path, test_db_profile, cli_conn):
+    def test_statuses_list_uses_named_profile(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
         """Setup: 'work' profile with test-db creds; project committed.
         Expectations: `statuses list <slug> --profile work` exits 0.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = ConfigManager(path=tmp_path / "config.toml")
-        bad_default = Profile("nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin")
+        bad_default = Profile(
+            "nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin"
+        )
         config.save(bad_default, name=None)
         config.save(test_db_profile, name="work")
 

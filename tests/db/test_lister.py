@@ -4,15 +4,14 @@ Tests that don't need a project setup (empty list_projects) sit outside any
 xfail; tests that depend on ProjectCreator working sit under an xfail until
 its bugs are fixed in ticket 023.
 """
-import pytest
+
+from factories import make_project
 
 from taigun.db.epic import EpicWriter
 from taigun.db.lister import Lister
 from taigun.db.project import ProjectCreator
 from taigun.models import Epic
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 class TestListProjectsEmpty:

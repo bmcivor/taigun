@@ -4,7 +4,6 @@ import pytest
 import yaml
 
 from taigun.state import (
-    StateEntry,
     StateError,
     StateFile,
     hash_file,

@@ -49,7 +49,7 @@ class BodyParser:
         priority: Optional[str] = None
         in_priority_section = False
 
-        for line in lines[title_idx + 1:]:
+        for line in lines[title_idx + 1 :]:
             heading_match = re.match(r"^### (.+)$", line)
             if heading_match is not None:
                 heading = heading_match.group(1).strip()

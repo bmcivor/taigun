@@ -1,7 +1,8 @@
 import pytest
+
 from taigun.exceptions import ParseError
+from taigun.models import Epic, Issue, Story, Task
 from taigun.parsers.frontmatter import FrontmatterParser
-from taigun.models import Story, Issue, Task, Epic
 
 
 def make_doc(frontmatter: str, body: str = "## Title\n") -> str:
@@ -91,7 +92,13 @@ class TestFrontmatterParserBuildPartial:
         """Setup: metadata with type story.
         Expectations: returns a Story instance with correct fields.
         """
-        metadata = {"type": "story", "project": "p", "tags": [], "epic": 2, "priority": "High"}
+        metadata = {
+            "type": "story",
+            "project": "p",
+            "tags": [],
+            "epic": 2,
+            "priority": "High",
+        }
         result = self.parser.build_partial(metadata)
 
         assert isinstance(result, Story)
@@ -105,8 +112,11 @@ class TestFrontmatterParserBuildPartial:
         Expectations: returns an Issue with issue_type and severity set.
         """
         metadata = {
-            "type": "issue", "project": "p", "tags": [],
-            "issue_type": "Bug", "severity": "High",
+            "type": "issue",
+            "project": "p",
+            "tags": [],
+            "issue_type": "Bug",
+            "severity": "High",
         }
         result = self.parser.build_partial(metadata)
 

@@ -1,9 +1,10 @@
 import datetime
+from typing import Union
+
 import frontmatter
-from typing import Optional, Union
 
 from taigun.exceptions import ParseError
-from taigun.models import Story, Issue, Task, Epic, Milestone
+from taigun.models import Epic, Issue, Milestone, Story, Task
 
 
 class FrontmatterParser:
@@ -14,9 +15,20 @@ class FrontmatterParser:
     """
 
     KNOWN_KEYS = {
-        "type", "project", "epic", "assignee", "milestone",
-        "tags", "status", "parent", "issue_type", "severity", "priority",
-        "estimated_start", "estimated_finish", "closed",
+        "type",
+        "project",
+        "epic",
+        "assignee",
+        "milestone",
+        "tags",
+        "status",
+        "parent",
+        "issue_type",
+        "severity",
+        "priority",
+        "estimated_start",
+        "estimated_finish",
+        "closed",
     }
 
     TICKET_TYPES = {"story", "issue", "task", "epic", "milestone"}
@@ -39,7 +51,9 @@ class FrontmatterParser:
 
         unknown = set(metadata.keys()) - self.KNOWN_KEYS
         if unknown:
-            raise ParseError(f"Unknown frontmatter fields: {', '.join(sorted(unknown))}")
+            raise ParseError(
+                f"Unknown frontmatter fields: {', '.join(sorted(unknown))}"
+            )
 
         for required in ("type", "project"):
             if required not in metadata:
@@ -57,7 +71,9 @@ class FrontmatterParser:
 
         return metadata, body
 
-    def build_partial(self, metadata: dict) -> Union[Story, Issue, Task, Epic, Milestone]:
+    def build_partial(
+        self, metadata: dict
+    ) -> Union[Story, Issue, Task, Epic, Milestone]:
         """Construct a partial ticket dataclass from frontmatter metadata.
 
         Body fields (subject, description) are left at their defaults.
@@ -83,8 +99,12 @@ class FrontmatterParser:
             return Milestone(
                 project=metadata["project"],
                 subject="",
-                estimated_start=_as_date(metadata["estimated_start"], "estimated_start"),
-                estimated_finish=_as_date(metadata["estimated_finish"], "estimated_finish"),
+                estimated_start=_as_date(
+                    metadata["estimated_start"], "estimated_start"
+                ),
+                estimated_finish=_as_date(
+                    metadata["estimated_finish"], "estimated_finish"
+                ),
                 closed=bool(metadata.get("closed", False)),
                 assignee=metadata.get("assignee"),
             )

@@ -16,10 +16,10 @@ status=0
 
 docker compose run --rm --no-deps --build --user "$(id -u):$(id -g)" lint sh -c '
     rc=0
-    echo "--- ruff format ---"
-    uv run ruff format . || rc=1
     echo "--- ruff check --fix ---"
-    uv run ruff check --fix . || rc=1
+    ruff check --fix . || rc=1
+    echo "--- ruff format ---"
+    ruff format . || rc=1
     exit $rc
 ' || status=1
 

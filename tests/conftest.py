@@ -7,6 +7,7 @@ opens a psycopg2 connection to the test-db service (configured via the
 `pythonpath = ["tests"]` in pyproject.toml lets tests import helpers like
 `factories` without packages or relative imports.
 """
+
 import os
 
 import psycopg2

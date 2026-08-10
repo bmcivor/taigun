@@ -3,6 +3,7 @@
 Each function takes an open psycopg2 connection and uses taigun's own app code
 (ProjectCreator, MilestoneWriter, etc.) to set up the state under test.
 """
+
 import datetime
 
 import psycopg2.extensions

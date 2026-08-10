@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 from typer.testing import CliRunner
 
 from taigun.cli import app
@@ -45,7 +44,9 @@ class TestProjectsCreate:
         assert result.exit_code == 0
         lines = result.output.splitlines()
         assert len(lines) == 1
-        assert lines[0].startswith("Created project #") and lines[0].endswith(f": {slug}")
+        assert lines[0].startswith("Created project #") and lines[0].endswith(
+            f": {slug}"
+        )
 
     def test_exits_nonzero_when_slug_exists(self, tmp_path, test_db_profile, cli_conn):
         """Setup: project with that slug already exists.
@@ -61,7 +62,9 @@ class TestProjectsCreate:
         assert result.exit_code == 1
         assert result.output == f"Project with slug '{slug}' already exists\n"
 
-    def test_unknown_acting_user_exits_nonzero(self, tmp_path, test_db_profile, cli_conn):
+    def test_unknown_acting_user_exits_nonzero(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
         """Setup: profile with acting_user='nobody' (does not exist).
         Expectations: exit 1; output mentions the unknown user.
         """
@@ -86,7 +89,9 @@ class TestProjectsCreate:
         Expectations: `projects create ... --profile work` exits 0.
         """
         config = ConfigManager(path=tmp_path / "config.toml")
-        bad_default = Profile("nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin")
+        bad_default = Profile(
+            "nonexistent-host", 5432, "taiga", "taiga", "taiga", "admin"
+        )
         config.save(bad_default, name=None)
         config.save(test_db_profile, name="work")
 
@@ -112,9 +117,15 @@ class TestProjectsUpdate:
         with patch_config(config):
             result = runner.invoke(
                 app,
-                ["projects", "update", slug,
-                 "--name", "Renamed",
-                 "--description", "New body"],
+                [
+                    "projects",
+                    "update",
+                    slug,
+                    "--name",
+                    "Renamed",
+                    "--description",
+                    "New body",
+                ],
             )
 
         assert result.exit_code == 0

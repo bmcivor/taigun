@@ -1,10 +1,10 @@
+from pathlib import Path
+
 import pytest
 import tomli_w
-from pathlib import Path
 
 from taigun.config import ConfigManager, Profile
 from taigun.exceptions import ConfigError
-
 
 VALID_PROFILE = {
     "host": "localhost",

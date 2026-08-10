@@ -88,14 +88,16 @@ class TaskWriter(BaseWriter):
         Follows the same semantics as ``StoryWriter.update`` — see that method
         for the field-clear / conflict / missing-ticket rules.
         """
-        project_id, object_id, (current_assigned_to, current_milestone, current_parent) = (
-            self._fetch_for_update(
-                task.project,
-                ref,
-                ["assigned_to_id", "milestone_id", "user_story_id"],
-                last_pushed_at,
-                ignore_conflict,
-            )
+        (
+            project_id,
+            object_id,
+            (current_assigned_to, current_milestone, current_parent),
+        ) = self._fetch_for_update(
+            task.project,
+            ref,
+            ["assigned_to_id", "milestone_id", "user_story_id"],
+            last_pushed_at,
+            ignore_conflict,
         )
 
         check_field_cleared("assignee", metadata_keys, current_assigned_to)

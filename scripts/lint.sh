@@ -14,11 +14,11 @@ status=0
 docker compose run --rm --no-deps --build lint sh -c '
     rc=0
     echo "--- ruff format --check ---"
-    uv run ruff format --check . || rc=1
+    ruff format --check . || rc=1
     echo "--- ruff check ---"
-    uv run ruff check . || rc=1
+    ruff check . || rc=1
     echo "--- mypy ---"
-    uv run mypy taigun || rc=1
+    mypy taigun || rc=1
     exit $rc
 ' || status=1
 

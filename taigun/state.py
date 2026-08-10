@@ -8,6 +8,7 @@ Purpose: give push a way to detect "this file has already been pushed", so
 future work (E9/034) can dispatch to an update path instead of always
 inserting.
 """
+
 import datetime
 import hashlib
 from dataclasses import dataclass
@@ -17,7 +18,6 @@ from typing import Optional
 import yaml
 
 from taigun.exceptions import TaigunError
-
 
 SIDECAR_DIR_NAME = ".taigun"
 SIDECAR_FILE_NAME = "state.yaml"
@@ -89,9 +89,7 @@ class StateFile:
             return
 
         if not isinstance(raw, dict) or "entries" not in raw:
-            raise StateError(
-                "Sidecar must be a mapping with an 'entries' key"
-            )
+            raise StateError("Sidecar must be a mapping with an 'entries' key")
 
         entries_list = raw["entries"] or []
         if not isinstance(entries_list, list):
@@ -103,9 +101,7 @@ class StateFile:
                 raise StateError(f"Sidecar entry #{i} is not a mapping")
             entry = self._build_entry(item, i)
             if entry.file_path in loaded:
-                raise StateError(
-                    f"Duplicate file_path in sidecar: {entry.file_path!r}"
-                )
+                raise StateError(f"Duplicate file_path in sidecar: {entry.file_path!r}")
             loaded[entry.file_path] = entry
 
         self._entries = loaded
@@ -178,8 +174,14 @@ class StateFile:
         return rel.as_posix()
 
     def _build_entry(self, item: dict, index: int) -> StateEntry:
-        required = ("file_path", "project", "ref", "ticket_type",
-                    "last_pushed_at", "content_hash")
+        required = (
+            "file_path",
+            "project",
+            "ref",
+            "ticket_type",
+            "last_pushed_at",
+            "content_hash",
+        )
         missing = [f for f in required if f not in item]
         if missing:
             raise StateError(
@@ -195,9 +197,7 @@ class StateFile:
                 content_hash=str(item["content_hash"]),
             )
         except (TypeError, ValueError) as e:
-            raise StateError(
-                f"Sidecar entry #{index} has an invalid field: {e}"
-            ) from e
+            raise StateError(f"Sidecar entry #{index} has an invalid field: {e}") from e
 
 
 def locate_sidecar(start: Path) -> Path:
@@ -250,6 +250,8 @@ def hash_file(path: Path) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat(
-        timespec="seconds"
-    ).replace("+00:00", "Z")
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )

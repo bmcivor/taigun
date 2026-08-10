@@ -1,6 +1,5 @@
 from typing import Dict, List, Tuple
 
-
 _STATUS_TABLES: Dict[str, str] = {
     "story": "projects_userstorystatus",
     "task": "projects_taskstatus",
@@ -61,7 +60,7 @@ class Lister:
         for ticket_type, table in _STATUS_TABLES.items():
             with self._conn.cursor() as cur:
                 cur.execute(
-                    f'SELECT name, is_closed FROM {table}'
+                    f"SELECT name, is_closed FROM {table}"
                     f' WHERE project_id = %s ORDER BY "order"',
                     (project_id,),
                 )

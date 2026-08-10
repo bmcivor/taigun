@@ -22,7 +22,9 @@ class TestProjectCreator:
         """Setup: create a project.
         Expectations: Lister.list_projects contains (name, slug) of the new project.
         """
-        ProjectCreator(real_conn, Resolver(real_conn)).create("My Project", "my-project", "admin")
+        ProjectCreator(real_conn, Resolver(real_conn)).create(
+            "My Project", "my-project", "admin"
+        )
 
         projects = Lister(real_conn).list_projects()
 
@@ -96,7 +98,9 @@ class TestProjectCreator:
         project_id, _ = ProjectCreator(real_conn, Resolver(real_conn)).create(
             "My Project", "my-project", "admin"
         )
-        content_type_id = Resolver(real_conn).resolve_content_type("userstories", "userstory")
+        content_type_id = Resolver(real_conn).resolve_content_type(
+            "userstories", "userstory"
+        )
 
         ref = RefAllocator(real_conn).allocate(project_id, 1, content_type_id)
 

@@ -1,12 +1,11 @@
 import datetime
 
 import psycopg2.extensions
+from factories import make_project
 
 from taigun.db.issue import IssueWriter
 from taigun.models import Issue
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 class TestIssueUpdate:
@@ -47,6 +46,8 @@ class TestIssueUpdate:
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat(
-        timespec="seconds"
-    ).replace("+00:00", "Z")
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )

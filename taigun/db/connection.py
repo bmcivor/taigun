@@ -1,6 +1,7 @@
-import psycopg2
 from contextlib import contextmanager
 from typing import Callable, Generator, Optional
+
+import psycopg2
 
 from taigun.config import Profile
 from taigun.exceptions import DatabaseConnectionError
@@ -22,13 +23,17 @@ class ConnectionManager:
         self,
         config: Profile,
         *,
-        _connection_factory: Optional[Callable[..., psycopg2.extensions.connection]] = None,
+        _connection_factory: Optional[
+            Callable[..., psycopg2.extensions.connection]
+        ] = None,
     ) -> None:
         self._config = config
         self._connect = _connection_factory or psycopg2.connect
 
     @contextmanager
-    def connect(self, dry_run: bool = False) -> Generator[psycopg2.extensions.connection, None, None]:
+    def connect(
+        self, dry_run: bool = False
+    ) -> Generator[psycopg2.extensions.connection, None, None]:
         """Open a database connection as a context manager.
 
         Args:
