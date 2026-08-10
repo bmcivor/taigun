@@ -2,6 +2,7 @@ import datetime
 
 import psycopg2.extensions
 import pytest
+from factories import make_project
 
 from taigun.db.milestone import MilestoneWriter
 from taigun.exceptions import (
@@ -11,12 +12,8 @@ from taigun.exceptions import (
 from taigun.models import Milestone
 from taigun.resolver import Resolver
 
-from factories import make_project
 
-
-def _push_milestone(
-    conn: psycopg2.extensions.connection, **overrides
-) -> int:
+def _push_milestone(conn: psycopg2.extensions.connection, **overrides) -> int:
     """Insert a milestone via the writer and return its id."""
     today = datetime.date.today()
     defaults = {
@@ -27,7 +24,8 @@ def _push_milestone(
     }
     defaults.update(overrides)
     return MilestoneWriter(conn, Resolver(conn)).write(
-        Milestone(**defaults), "admin",
+        Milestone(**defaults),
+        "admin",
     )
 
 
@@ -53,8 +51,13 @@ class TestMilestoneUpdate:
                 closed=True,
             ),
             milestone_id=milestone_id,
-            metadata_keys={"type", "project", "estimated_start",
-                           "estimated_finish", "closed"},
+            metadata_keys={
+                "type",
+                "project",
+                "estimated_start",
+                "estimated_finish",
+                "closed",
+            },
             acting_user="admin",
             last_pushed_at=_now_iso(),
         )
@@ -69,9 +72,7 @@ class TestMilestoneUpdate:
 
         assert row == (new_start, new_finish, True)
 
-    def test_missing_id_raises(
-        self, real_conn: psycopg2.extensions.connection
-    ) -> None:
+    def test_missing_id_raises(self, real_conn: psycopg2.extensions.connection) -> None:
         """Setup: project exists but no milestone with this id.
         Expectations: MilestoneMissingError raised.
         """
@@ -87,8 +88,12 @@ class TestMilestoneUpdate:
                     estimated_finish=today,
                 ),
                 milestone_id=999999,
-                metadata_keys={"type", "project", "estimated_start",
-                               "estimated_finish"},
+                metadata_keys={
+                    "type",
+                    "project",
+                    "estimated_start",
+                    "estimated_finish",
+                },
                 acting_user="admin",
                 last_pushed_at=_now_iso(),
             )
@@ -112,14 +117,20 @@ class TestMilestoneUpdate:
                     estimated_finish=today,
                 ),
                 milestone_id=milestone_id,
-                metadata_keys={"type", "project", "estimated_start",
-                               "estimated_finish"},
+                metadata_keys={
+                    "type",
+                    "project",
+                    "estimated_start",
+                    "estimated_finish",
+                },
                 acting_user="admin",
                 last_pushed_at="2020-01-01T00:00:00Z",
             )
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat(
-        timespec="seconds"
-    ).replace("+00:00", "Z")
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )

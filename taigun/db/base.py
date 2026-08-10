@@ -1,6 +1,6 @@
 import datetime
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Optional, Sequence, Tuple
 
 from taigun.db.ref import RefAllocator
 from taigun.db.update_helpers import check_taiga_conflict, parse_taiga_timestamp
@@ -15,14 +15,16 @@ class BaseWriter(ABC):
     """
 
     _ticket_type: str
-    _content_type: tuple[str, str]
+    _content_type: Tuple[str, str]
     _table: str
 
     def __init__(self, conn, resolver) -> None:
         self._conn = conn
         self._resolver = resolver
 
-    def _resolve_common(self, ticket, acting_user: str) -> tuple[int, int, int, datetime.datetime]:
+    def _resolve_common(
+        self, ticket, acting_user: str
+    ) -> Tuple[int, int, int, datetime.datetime]:
         """Resolve the fields common to every ticket type.
 
         Args:
@@ -38,7 +40,7 @@ class BaseWriter(ABC):
         status_id = self._resolve_status(project_id, ticket.status)
         return project_id, owner_id, status_id, now
 
-    def _resolve_status(self, project_id: int, status: str | None) -> int:
+    def _resolve_status(self, project_id: int, status: Optional[str]) -> int:
         """Resolve status ID for this writer's ticket type.
 
         Delegates to ``Resolver.resolve_status`` which handles both the
@@ -82,7 +84,7 @@ class BaseWriter(ABC):
         extra_columns: Sequence[str],
         last_pushed_at: str,
         ignore_conflict: bool,
-    ) -> tuple[int, int, tuple]:
+    ) -> Tuple[int, int, tuple]:
         """Shared prologue for every ticket writer's ``update()``.
 
         Resolves the project, SELECTs the row keyed by (project_id, ref)

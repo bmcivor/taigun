@@ -82,7 +82,9 @@ class ProjectCreator:
             "points": _as_list(row[10]),
         }
 
-    def _insert_project(self, name: str, slug: str, owner_id: int, template_id: int) -> int:
+    def _insert_project(
+        self, name: str, slug: str, owner_id: int, template_id: int
+    ) -> int:
         now = datetime.datetime.now(datetime.timezone.utc)
         with self._conn.cursor() as cur:
             cur.execute(
@@ -104,14 +106,36 @@ class ProjectCreator:
                 "         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 " RETURNING id",
                 (
-                    name, slug, "", owner_id, template_id,
-                    now, now, now,
-                    False, True, True, True, True, True,
-                    False, False, False, "",
-                    [], [],
-                    [], [],
-                    0, 0, 0, 0,
-                    0, 0, 0, 0,
+                    name,
+                    slug,
+                    "",
+                    owner_id,
+                    template_id,
+                    now,
+                    now,
+                    now,
+                    False,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    False,
+                    False,
+                    False,
+                    "",
+                    [],
+                    [],
+                    [],
+                    [],
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
                 ),
             )
             return cur.fetchone()[0]
@@ -161,7 +185,7 @@ class ProjectCreator:
         with self._conn.cursor() as cur:
             cur.execute(
                 f"INSERT INTO {table}"
-                f" (project_id, name, color, \"order\")"
+                f' (project_id, name, color, "order")'
                 f" VALUES (%s, %s, %s, %s)",
                 (
                     project_id,
@@ -176,7 +200,7 @@ class ProjectCreator:
             with self._conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO projects_points"
-                    " (project_id, name, \"order\", value)"
+                    ' (project_id, name, "order", value)'
                     " VALUES (%s, %s, %s, %s)",
                     (
                         project_id,
@@ -189,10 +213,26 @@ class ProjectCreator:
     def _set_project_defaults(self, project_id: int, template: dict) -> None:
         defaults = template["default_options"]
         mapping = (
-            ("default_us_status_id", "projects_userstorystatus", defaults.get("us_status")),
-            ("default_task_status_id", "projects_taskstatus", defaults.get("task_status")),
-            ("default_issue_status_id", "projects_issuestatus", defaults.get("issue_status")),
-            ("default_epic_status_id", "projects_epicstatus", defaults.get("epic_status")),
+            (
+                "default_us_status_id",
+                "projects_userstorystatus",
+                defaults.get("us_status"),
+            ),
+            (
+                "default_task_status_id",
+                "projects_taskstatus",
+                defaults.get("task_status"),
+            ),
+            (
+                "default_issue_status_id",
+                "projects_issuestatus",
+                defaults.get("issue_status"),
+            ),
+            (
+                "default_epic_status_id",
+                "projects_epicstatus",
+                defaults.get("epic_status"),
+            ),
             ("default_priority_id", "projects_priority", defaults.get("priority")),
             ("default_severity_id", "projects_severity", defaults.get("severity")),
             ("default_issue_type_id", "projects_issuetype", defaults.get("issue_type")),
@@ -217,7 +257,9 @@ class ProjectCreator:
             row = cur.fetchone()
 
         if row is None:
-            raise ResolveError(f"Default '{name}' not found in {table} for project {project_id}")
+            raise ResolveError(
+                f"Default '{name}' not found in {table} for project {project_id}"
+            )
 
         return row[0]
 
@@ -225,13 +267,17 @@ class ProjectCreator:
         with self._conn.cursor() as cur:
             cur.execute(f"CREATE SEQUENCE references_project{project_id} START WITH 1")
 
-    def _insert_owner_membership(self, project_id: int, owner_id: int, template: dict) -> None:
+    def _insert_owner_membership(
+        self, project_id: int, owner_id: int, template: dict
+    ) -> None:
         admin_role = next(
             (r for r in template["roles"] if r.get("name", "").lower() == "admin"),
             template["roles"][0] if template["roles"] else None,
         )
         if admin_role is None:
-            raise ResolveError("No roles defined in template, cannot create owner membership")
+            raise ResolveError(
+                "No roles defined in template, cannot create owner membership"
+            )
 
         with self._conn.cursor() as cur:
             cur.execute(
@@ -267,7 +313,7 @@ class ProjectCreator:
     def _insert_role(self, project_id: int, role: dict) -> None:
         with self._conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO users_role (project_id, name, slug, \"order\", computable)"
+                'INSERT INTO users_role (project_id, name, slug, "order", computable)'
                 " VALUES (%s, %s, %s, %s, %s)",
                 (
                     project_id,
@@ -333,8 +379,7 @@ class ProjectUpdater:
 
         with self._conn.cursor() as cur:
             cur.execute(
-                f"UPDATE projects_project SET {', '.join(assignments)}"
-                " WHERE id = %s",
+                f"UPDATE projects_project SET {', '.join(assignments)} WHERE id = %s",
                 tuple(values),
             )
 

@@ -56,7 +56,9 @@ def main(ctx: typer.Context) -> None:
 
 @app.command()
 def configure(
-    profile: Optional[str] = typer.Option(None, "--profile", help="Profile name to configure."),
+    profile: Optional[str] = typer.Option(
+        None, "--profile", help="Profile name to configure."
+    ),
 ) -> None:
     """Set up a connection profile."""
     config = ConfigManager()
@@ -65,7 +67,9 @@ def configure(
         profile = typer.prompt("Profile name", default="default")
 
     if _profile_exists(config, profile):
-        overwrite = typer.confirm(f"Profile '{profile}' already exists. Overwrite?", default=False)
+        overwrite = typer.confirm(
+            f"Profile '{profile}' already exists. Overwrite?", default=False
+        )
         if not overwrite:
             raise typer.Exit()
 
@@ -100,11 +104,16 @@ def configure(
 @app.command()
 def push(
     files: List[Path] = typer.Argument(..., help="Ticket file(s) to push."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Resolve FKs but do not insert."),
-    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Resolve FKs but do not insert."
+    ),
+    profile: Optional[str] = typer.Option(
+        None, "--profile", help="Config profile to use."
+    ),
     force: bool = typer.Option(
-        False, "--force",
-        help="Skip conflict / missing-ticket prompts (overwrite / re-insert automatically)."
+        False,
+        "--force",
+        help="Skip conflict / missing-ticket prompts (overwrite / re-insert automatically).",
     ),
 ) -> None:
     """Parse and push (or update) one or more ticket files to Taiga.
@@ -145,13 +154,29 @@ def push(
 
                 if entry is None:
                     _handle_insert(
-                        path, ticket, ticket_type, writer_class,
-                        manager, config, state, dry_run,
+                        path,
+                        ticket,
+                        ticket_type,
+                        writer_class,
+                        manager,
+                        config,
+                        state,
+                        dry_run,
                     )
                 else:
+                    assert state is not None
                     _handle_upsert(
-                        path, ticket, ticket_type, writer_class,
-                        metadata_keys, entry, manager, config, state, force, dry_run,
+                        path,
+                        ticket,
+                        ticket_type,
+                        writer_class,
+                        metadata_keys,
+                        entry,
+                        manager,
+                        config,
+                        state,
+                        force,
+                        dry_run,
                     )
 
             except TaigunError as e:
@@ -185,7 +210,7 @@ def _handle_insert(
     if dry_run:
         with manager.connect(dry_run=True) as conn:
             Resolver(conn).resolve_project(ticket.project)
-        typer.echo(f"~ {ticket_type}: \"{ticket.subject}\"")
+        typer.echo(f'~ {ticket_type}: "{ticket.subject}"')
         return
 
     with manager.connect() as conn:
@@ -203,9 +228,9 @@ def _handle_insert(
         )
 
     if ticket_type == "milestone":
-        typer.echo(f"✓ {ticket_type}: \"{ticket.subject}\"")
+        typer.echo(f'✓ {ticket_type}: "{ticket.subject}"')
     else:
-        typer.echo(f"✓ #{ref} {ticket_type}: \"{ticket.subject}\"")
+        typer.echo(f'✓ #{ref} {ticket_type}: "{ticket.subject}"')
 
 
 def _handle_upsert(
@@ -246,11 +271,11 @@ def _handle_upsert(
     current_hash = hash_file(path)
     if current_hash == entry.content_hash:
         prefix = "~ " if dry_run else ""
-        typer.echo(f"{prefix}(unchanged) {ref_label}{ticket_type}: \"{ticket.subject}\"")
+        typer.echo(f'{prefix}(unchanged) {ref_label}{ticket_type}: "{ticket.subject}"')
         return
 
     if dry_run:
-        typer.echo(f"~ {ref_label}{ticket_type}: \"{ticket.subject}\" (would update)")
+        typer.echo(f'~ {ref_label}{ticket_type}: "{ticket.subject}" (would update)')
         return
 
     with manager.connect() as conn:
@@ -259,8 +284,11 @@ def _handle_upsert(
 
         try:
             writer.update(
-                ticket, entry.ref, metadata_keys,
-                config.acting_user, entry.last_pushed_at,
+                ticket,
+                entry.ref,
+                metadata_keys,
+                config.acting_user,
+                entry.last_pushed_at,
             )
 
         except (TicketConflictError, MilestoneConflictError) as e:
@@ -273,8 +301,11 @@ def _handle_upsert(
                 return
 
             writer.update(
-                ticket, entry.ref, metadata_keys,
-                config.acting_user, entry.last_pushed_at,
+                ticket,
+                entry.ref,
+                metadata_keys,
+                config.acting_user,
+                entry.last_pushed_at,
                 ignore_conflict=True,
             )
 
@@ -283,7 +314,9 @@ def _handle_upsert(
                 f"{e}. Re-insert as new?",
                 default=True,
             ):
-                typer.echo(f"↷ {ticket_type}: skipped (not in Taiga, user declined re-insert)")
+                typer.echo(
+                    f"↷ {ticket_type}: skipped (not in Taiga, user declined re-insert)"
+                )
                 return
 
             new_ref = writer.write(ticket, config.acting_user)
@@ -296,7 +329,9 @@ def _handle_upsert(
                 ticket_type=ticket_type,
                 content_hash=current_hash,
             )
-            typer.echo(f"✓ {new_ref_label}{ticket_type}: \"{ticket.subject}\" (re-inserted)")
+            typer.echo(
+                f'✓ {new_ref_label}{ticket_type}: "{ticket.subject}" (re-inserted)'
+            )
             return
 
     state.record(
@@ -306,14 +341,16 @@ def _handle_upsert(
         ticket_type=ticket_type,
         content_hash=current_hash,
     )
-    typer.echo(f"↺ {ref_label}{ticket_type}: \"{ticket.subject}\" (updated)")
+    typer.echo(f'↺ {ref_label}{ticket_type}: "{ticket.subject}" (updated)')
 
 
 @projects_app.command("create")
 def projects_create(
     name: str = typer.Argument(..., help="Project name."),
     slug: str = typer.Argument(..., help="Project slug."),
-    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+    profile: Optional[str] = typer.Option(
+        None, "--profile", help="Config profile to use."
+    ),
 ) -> None:
     """Create a new Taiga project."""
     config = _load_config(profile)
@@ -335,10 +372,13 @@ def projects_update(
     slug: str = typer.Argument(..., help="Slug of the project to update."),
     name: Optional[str] = typer.Option(None, "--name", help="New project name."),
     description: Optional[str] = typer.Option(
-        None, "--description",
+        None,
+        "--description",
         help="New project description (pass '' to clear).",
     ),
-    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+    profile: Optional[str] = typer.Option(
+        None, "--profile", help="Config profile to use."
+    ),
 ) -> None:
     """Update an existing Taiga project's name and/or description."""
     if name is None and description is None:
@@ -360,7 +400,9 @@ def projects_update(
 
 @projects_app.command("list")
 def projects_list(
-    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+    profile: Optional[str] = typer.Option(
+        None, "--profile", help="Config profile to use."
+    ),
 ) -> None:
     """List all projects on the configured instance."""
     config = _load_config(profile)
@@ -380,7 +422,9 @@ def projects_list(
 @epics_app.command("list")
 def epics_list(
     project_slug: str = typer.Argument(..., help="Project slug."),
-    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+    profile: Optional[str] = typer.Option(
+        None, "--profile", help="Config profile to use."
+    ),
 ) -> None:
     """List all epics in a project."""
     config = _load_config(profile)
@@ -401,7 +445,9 @@ def epics_list(
 @statuses_app.command("list")
 def statuses_list(
     project_slug: str = typer.Argument(..., help="Project slug."),
-    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use."),
+    profile: Optional[str] = typer.Option(
+        None, "--profile", help="Config profile to use."
+    ),
 ) -> None:
     """List statuses grouped by ticket type for a project."""
     config = _load_config(profile)

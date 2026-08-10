@@ -203,7 +203,7 @@ class StoryWriter(BaseWriter):
 
             if epic_id is not None:
                 cur.execute(
-                    'INSERT INTO epics_relateduserstory'
+                    "INSERT INTO epics_relateduserstory"
                     ' (epic_id, user_story_id, "order") VALUES (%s, %s, %s)',
                     (epic_id, object_id, int(now.timestamp())),
                 )

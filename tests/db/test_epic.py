@@ -1,11 +1,9 @@
-import pytest
+from factories import make_project
 
 from taigun.db.epic import EpicWriter
 from taigun.db.lister import Lister
 from taigun.models import Epic
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 class TestEpicWriter:

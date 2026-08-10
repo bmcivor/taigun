@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from taigun.exceptions import ParseError
 
@@ -12,7 +12,7 @@ class BodyParser:
     remaining body content verbatim as the description.
     """
 
-    def parse(self, body: str) -> tuple[str, str, Optional[str]]:
+    def parse(self, body: str) -> Tuple[str, str, Optional[str]]:
         """Parse the markdown body into subject, description, and optional priority.
 
         The first ``## Heading`` becomes the subject. ``### Priority`` is extracted
@@ -45,11 +45,11 @@ class BodyParser:
         if subject is None:
             raise ParseError("Body is missing a ## Title heading")
 
-        description_lines: list[str] = []
+        description_lines: List[str] = []
         priority: Optional[str] = None
         in_priority_section = False
 
-        for line in lines[title_idx + 1:]:
+        for line in lines[title_idx + 1 :]:
             heading_match = re.match(r"^### (.+)$", line)
             if heading_match is not None:
                 heading = heading_match.group(1).strip()

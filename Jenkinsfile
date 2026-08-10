@@ -13,6 +13,11 @@ pipeline {
                 sh './scripts/test.sh'
             }
         }
+        stage('Lint') {
+            steps {
+                sh './scripts/lint.sh'
+            }
+        }
     }
 
     post {

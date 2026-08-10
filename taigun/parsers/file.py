@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import Union
 
 from taigun.exceptions import ParseError
-from taigun.models import Story, Issue, Task, Epic, Milestone
-from taigun.parsers.frontmatter import FrontmatterParser
+from taigun.models import Epic, Issue, Milestone, Story, Task
 from taigun.parsers.body import BodyParser
+from taigun.parsers.frontmatter import FrontmatterParser
 
 
 class FileParser:
@@ -17,7 +17,9 @@ class FileParser:
         self._frontmatter = FrontmatterParser()
         self._body = BodyParser()
 
-    def parse(self, path: Union[str, Path]) -> Union[Story, Issue, Task, Epic, Milestone]:
+    def parse(
+        self, path: Union[str, Path]
+    ) -> Union[Story, Issue, Task, Epic, Milestone]:
         """Read a markdown ticket file and return a fully populated dataclass.
 
         Priority (either as a ``priority:`` frontmatter field or a
@@ -46,7 +48,9 @@ class FileParser:
         subject, description, body_priority = self._body.parse(body)
 
         fm_priority = metadata.get("priority")
-        if (body_priority is not None or fm_priority is not None) and metadata["type"] != "issue":
+        if (body_priority is not None or fm_priority is not None) and metadata[
+            "type"
+        ] != "issue":
             raise ParseError(
                 f"Priority is only supported on issue tickets. "
                 f"This is a {metadata['type']}; remove the `priority:` frontmatter "
@@ -68,6 +72,7 @@ class FileParser:
         ticket.description = description
 
         if body_priority is not None:
+            assert isinstance(ticket, Issue)
             ticket.priority = body_priority
 
         return ticket

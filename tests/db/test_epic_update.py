@@ -1,12 +1,11 @@
 import datetime
 
 import psycopg2.extensions
+from factories import make_project
 
 from taigun.db.epic import EpicWriter
 from taigun.models import Epic
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 class TestEpicUpdate:
@@ -70,6 +69,8 @@ class TestEpicUpdate:
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat(
-        timespec="seconds"
-    ).replace("+00:00", "Z")
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )

@@ -1,4 +1,4 @@
-from taigun.models import Story, Issue, Task, Epic
+from taigun.models import Epic, Issue, Story, Task
 
 
 class TestStory:

@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 import yaml
 from typer.testing import CliRunner
 
@@ -22,9 +21,17 @@ def unique_slug() -> str:
     return f"test-{uuid.uuid4().hex[:8]}"
 
 
-def write_ticket(tmp_path: Path, name: str, ticket_type: str, project_slug: str, subject: str = "The subject") -> Path:
+def write_ticket(
+    tmp_path: Path,
+    name: str,
+    ticket_type: str,
+    project_slug: str,
+    subject: str = "The subject",
+) -> Path:
     """Write a minimal valid markdown ticket file and return its path."""
-    content = f"---\ntype: {ticket_type}\nproject: {project_slug}\n---\n\n## {subject}\n"
+    content = (
+        f"---\ntype: {ticket_type}\nproject: {project_slug}\n---\n\n## {subject}\n"
+    )
     path = tmp_path / name
     path.write_text(content)
     return path
@@ -93,7 +100,9 @@ class TestPushSuccess:
             `✓ #<ref> story: "Hello"` (ref is dynamic so use endswith).
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Hello")
 
@@ -110,7 +119,9 @@ class TestPushSuccess:
         Expectations: two success lines; exit 0.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         a = write_ticket(tmp_path, "a.md", "story", slug, subject="A")
         b = write_ticket(tmp_path, "b.md", "story", slug, subject="B")
@@ -126,7 +137,9 @@ class TestPushSuccess:
         Expectations: output is exactly `~ story: "Dry"` (no ref, no ✓).
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Dry")
 
@@ -144,7 +157,9 @@ class TestPushSuccess:
             consume a ref by INSERTing and rolling back (E12 #57).
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
 
         first = write_ticket(tmp_path, "first.md", "story", slug, subject="First")
@@ -172,7 +187,9 @@ class TestPushSuccess:
             dispatches to the update path and reports the no-op (E12 #57).
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "same.md", "story", slug, subject="Same")
 
@@ -196,7 +213,9 @@ class TestPushSuccess:
             (E12 #57). No actual UPDATE is issued.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Original")
 
@@ -204,9 +223,7 @@ class TestPushSuccess:
             first = runner.invoke(app, ["push", str(ticket)])
         ref = _ref_from_insert_output(first.output)
 
-        ticket.write_text(
-            f"---\ntype: story\nproject: {slug}\n---\n\n## Changed\n"
-        )
+        ticket.write_text(f"---\ntype: story\nproject: {slug}\n---\n\n## Changed\n")
 
         with patch_config(config):
             dry = runner.invoke(app, ["push", "--dry-run", str(ticket)])
@@ -229,7 +246,9 @@ class TestPushSuccess:
             error line for the bad file.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         good = write_ticket(tmp_path, "good.md", "story", slug, subject="Good")
         bad = tmp_path / "bad.md"
@@ -248,7 +267,9 @@ class TestPushSuccess:
         Expectations: exit 0 (the work profile's credentials are used).
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         (tmp_path / ".git").mkdir()
         config = ConfigManager(path=tmp_path / "config.toml")
         bad_default = Profile(
@@ -278,7 +299,9 @@ class TestPushUpsert:
             duplicate ticket exists in the DB.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="First")
 
@@ -287,9 +310,7 @@ class TestPushUpsert:
         assert first.exit_code == 0
         ref = _ref_from_insert_output(first.output)
 
-        ticket.write_text(
-            f"---\ntype: story\nproject: {slug}\n---\n\n## Second\n"
-        )
+        ticket.write_text(f"---\ntype: story\nproject: {slug}\n---\n\n## Second\n")
 
         with patch_config(config):
             second = runner.invoke(app, ["push", str(ticket)])
@@ -306,15 +327,15 @@ class TestPushUpsert:
             (count,) = cur.fetchone()
         assert count == 1
 
-    def test_re_push_unchanged_file_is_noop(
-        self, tmp_path, test_db_profile, cli_conn
-    ):
+    def test_re_push_unchanged_file_is_noop(self, tmp_path, test_db_profile, cli_conn):
         """Setup: push a story; re-push the same file with no edits.
         Expectations: second push prints "(unchanged) #<ref>"; DB row's
             modified_date does not advance.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="Same")
 
@@ -352,16 +373,16 @@ class TestPushUpsert:
         Expectations: exit 1; error message about identity change.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = write_ticket(tmp_path, "ticket.md", "story", slug, subject="X")
 
         with patch_config(config):
             runner.invoke(app, ["push", str(ticket)])
 
-        ticket.write_text(
-            f"---\ntype: epic\nproject: {slug}\n---\n\n## X\n"
-        )
+        ticket.write_text(f"---\ntype: epic\nproject: {slug}\n---\n\n## X\n")
 
         with patch_config(config):
             result = runner.invoke(app, ["push", str(ticket)])
@@ -380,7 +401,9 @@ class TestPushUpsert:
             DB row unchanged.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = tmp_path / "sprint.md"
         ticket.write_text(
@@ -407,7 +430,9 @@ class TestPushUpsert:
             new dates and closed flag.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
         ticket = tmp_path / "sprint.md"
         ticket.write_text(
@@ -470,7 +495,9 @@ class TestPushMidBatchFailure:
             run — the sidecar file would not exist.
         """
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
 
         a = write_ticket(tmp_path, "a.md", "story", slug, subject="A")
@@ -486,7 +513,9 @@ class TestPushMidBatchFailure:
             raise RuntimeError("boom")
 
         with patch_config(config):
-            with patch.object(StoryWriter, "write", autospec=True, side_effect=side_effect):
+            with patch.object(
+                StoryWriter, "write", autospec=True, side_effect=side_effect
+            ):
                 result = runner.invoke(app, ["push", str(a), str(b)])
 
         assert result.exit_code != 0
@@ -528,7 +557,9 @@ class TestPushMidBatchFailure:
         from taigun.exceptions import DatabaseConnectionError
 
         slug = unique_slug()
-        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create(
+            "Test Project", slug, "admin"
+        )
         config = make_config(tmp_path, test_db_profile)
 
         a = write_ticket(tmp_path, "a.md", "story", slug, subject="A")
@@ -545,7 +576,9 @@ class TestPushMidBatchFailure:
             return real_write(self, ticket, actor)
 
         with patch_config(config):
-            with patch.object(StoryWriter, "write", autospec=True, side_effect=side_effect):
+            with patch.object(
+                StoryWriter, "write", autospec=True, side_effect=side_effect
+            ):
                 result = runner.invoke(app, ["push", str(a), str(b), str(c)])
 
         assert result.exit_code == 1

@@ -75,7 +75,9 @@ class TestConfigureHappyPath:
         inputs = make_inputs(valid_inputs_for(test_db_profile))
 
         with patch_config(config):
-            result = runner.invoke(app, ["configure", "--profile", "work"], input=inputs)
+            result = runner.invoke(
+                app, ["configure", "--profile", "work"], input=inputs
+            )
 
         assert result.exit_code == 0
         loaded = config.load("work")

@@ -1,10 +1,8 @@
-import pytest
+from factories import make_milestone, make_project
 
 from taigun.db.issue import IssueWriter
 from taigun.models import Issue
 from taigun.resolver import Resolver
-
-from factories import make_milestone, make_project
 
 
 class TestIssueWriter:

@@ -1,13 +1,11 @@
 import datetime
 
-import pytest
+from factories import make_project
 
 from taigun.db.base import BaseWriter
 from taigun.db.story import StoryWriter
 from taigun.models import Story
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 class StubWriter(BaseWriter):

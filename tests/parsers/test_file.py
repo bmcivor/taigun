@@ -4,9 +4,8 @@ from pathlib import Path
 import pytest
 
 from taigun.exceptions import ParseError
-from taigun.models import Story, Issue, Task, Epic, Milestone
+from taigun.models import Issue, Milestone, Story
 from taigun.parsers.file import FileParser
-
 
 FRONTMATTER_STORY = "---\ntype: story\nproject: p\n---\n\n"
 FRONTMATTER_ISSUE = "---\ntype: issue\nproject: p\n---\n\n"
@@ -24,8 +23,7 @@ class TestFileParser:
         """
         f = tmp_path / "ticket.md"
         f.write_text(
-            FRONTMATTER_STORY
-            + "## Do the thing\n\n"
+            FRONTMATTER_STORY + "## Do the thing\n\n"
             "### Acceptance Criteria\n\n- it works\n"
         )
         result = self.parser.parse(f)
@@ -48,11 +46,7 @@ class TestFileParser:
         Expectations: priority field on returned Issue reflects body value.
         """
         f = tmp_path / "ticket.md"
-        f.write_text(
-            FRONTMATTER_ISSUE
-            + "## Title\n\n"
-            "### Priority\nHigh\n"
-        )
+        f.write_text(FRONTMATTER_ISSUE + "## Title\n\n### Priority\nHigh\n")
         result = self.parser.parse(f)
 
         assert isinstance(result, Issue)
@@ -77,11 +71,7 @@ class TestFileParser:
         Expectations: ParseError raised — priority is only valid on issues.
         """
         f = tmp_path / "ticket.md"
-        f.write_text(
-            FRONTMATTER_STORY
-            + "## Title\n\n"
-            "### Priority\nHigh\n"
-        )
+        f.write_text(FRONTMATTER_STORY + "## Title\n\n### Priority\nHigh\n")
         with pytest.raises(ParseError, match="story"):
             self.parser.parse(f)
 
@@ -90,10 +80,7 @@ class TestFileParser:
         Expectations: ParseError raised — priority is only valid on issues.
         """
         f = tmp_path / "ticket.md"
-        f.write_text(
-            "---\ntype: story\nproject: p\npriority: High\n---\n\n"
-            "## Title\n"
-        )
+        f.write_text("---\ntype: story\nproject: p\npriority: High\n---\n\n## Title\n")
         with pytest.raises(ParseError, match="story"):
             self.parser.parse(f)
 
@@ -102,11 +89,7 @@ class TestFileParser:
         Expectations: ParseError raised — priority is only valid on issues.
         """
         f = tmp_path / "ticket.md"
-        f.write_text(
-            FRONTMATTER_TASK
-            + "## Task Title\n\n"
-            "### Priority\nHigh\n"
-        )
+        f.write_text(FRONTMATTER_TASK + "## Task Title\n\n### Priority\nHigh\n")
         with pytest.raises(ParseError, match="task"):
             self.parser.parse(f)
 
@@ -115,11 +98,7 @@ class TestFileParser:
         Expectations: ParseError raised — priority is only valid on issues.
         """
         f = tmp_path / "ticket.md"
-        f.write_text(
-            FRONTMATTER_EPIC
-            + "## Epic Title\n\n"
-            "### Priority\nHigh\n"
-        )
+        f.write_text(FRONTMATTER_EPIC + "## Epic Title\n\n### Priority\nHigh\n")
         with pytest.raises(ParseError, match="epic"):
             self.parser.parse(f)
 
@@ -129,8 +108,7 @@ class TestFileParser:
         """
         f = tmp_path / "ticket.md"
         f.write_text(
-            FRONTMATTER_ISSUE
-            + "## Title\n\n"
+            FRONTMATTER_ISSUE + "## Title\n\n"
             "### Acceptance Criteria\n\n- done\n\n"
             "### Priority\nHigh\n"
         )
@@ -144,8 +122,7 @@ class TestFileParser:
         """
         f = tmp_path / "ticket.md"
         f.write_text(
-            FRONTMATTER_STORY
-            + "## Title\n\n"
+            FRONTMATTER_STORY + "## Title\n\n"
             "**As a** dev\n"
             "**I want** something\n"
             "**So that** reason\n\n"

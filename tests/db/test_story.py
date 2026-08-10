@@ -1,11 +1,9 @@
-import pytest
+from factories import make_milestone, make_project
 
 from taigun.db.epic import EpicWriter
 from taigun.db.story import StoryWriter
 from taigun.models import Epic, Story
 from taigun.resolver import Resolver
-
-from factories import make_milestone, make_project
 
 
 class TestStoryWriter:
@@ -129,10 +127,12 @@ class TestStoryWriter:
         writer = StoryWriter(real_conn, Resolver(real_conn))
 
         open_ref = writer.write(
-            Story(project="test-project", subject="open"), "admin",
+            Story(project="test-project", subject="open"),
+            "admin",
         )
         closed_ref = writer.write(
-            Story(project="test-project", subject="closed", status="Done"), "admin",
+            Story(project="test-project", subject="closed", status="Done"),
+            "admin",
         )
 
         with real_conn.cursor() as cur:

@@ -1,4 +1,5 @@
 import pytest
+
 from taigun.exceptions import ParseError
 from taigun.parsers.body import BodyParser
 
@@ -70,7 +71,10 @@ class TestBodyParserParse:
         )
         _, description, _ = self.parser.parse(body)
 
-        assert description == "### User Story\n\nAs a dev\n\n### Acceptance Criteria\n\n- done"
+        assert (
+            description
+            == "### User Story\n\nAs a dev\n\n### Acceptance Criteria\n\n- done"
+        )
 
     def test_priority_not_in_description(self):
         """Setup: body with ### Priority among other sections.
@@ -85,7 +89,10 @@ class TestBodyParserParse:
         _, description, priority = self.parser.parse(body)
 
         assert priority == "High"
-        assert description == "### User Story\n\nAs a dev\n\n### Acceptance Criteria\n\n- done"
+        assert (
+            description
+            == "### User Story\n\nAs a dev\n\n### Acceptance Criteria\n\n- done"
+        )
 
     def test_empty_priority_section_returns_none(self):
         """Setup: ### Priority section with no content.
@@ -130,8 +137,5 @@ class TestBodyParserParse:
         _, description, _ = self.parser.parse(body)
 
         assert description == (
-            "### Context\n\n"
-            "Background paragraph.\n\n"
-            "### Acceptance Criteria\n\n"
-            "- done"
+            "### Context\n\nBackground paragraph.\n\n### Acceptance Criteria\n\n- done"
         )

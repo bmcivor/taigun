@@ -2,6 +2,7 @@ import datetime
 
 import psycopg2.extensions
 import pytest
+from factories import make_project
 
 from taigun.db.story import StoryWriter
 from taigun.exceptions import (
@@ -11,8 +12,6 @@ from taigun.exceptions import (
 )
 from taigun.models import Story
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 def _push_story(conn: psycopg2.extensions.connection, **overrides) -> int:
@@ -148,7 +147,7 @@ class TestStoryUpdate:
             metadata but value is None (explicit null).
         Expectations: assigned_to_id cleared to NULL in DB.
         """
-        project_id = make_project(real_conn)
+        make_project(real_conn)
         ref = _push_story(real_conn, assignee="admin")
 
         StoryWriter(real_conn, Resolver(real_conn)).update(
@@ -203,6 +202,8 @@ class TestStoryUpdate:
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat(
-        timespec="seconds"
-    ).replace("+00:00", "Z")
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )

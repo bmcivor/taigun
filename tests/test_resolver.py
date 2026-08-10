@@ -1,11 +1,10 @@
 import logging
 
 import pytest
+from factories import make_project
 
 from taigun.exceptions import ResolveError
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 class TestResolveUser:

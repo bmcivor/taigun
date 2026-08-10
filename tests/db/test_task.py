@@ -1,11 +1,9 @@
-import pytest
+from factories import make_milestone, make_project
 
 from taigun.db.story import StoryWriter
 from taigun.db.task import TaskWriter
 from taigun.models import Story, Task
 from taigun.resolver import Resolver
-
-from factories import make_milestone, make_project
 
 
 class TestTaskWriter:

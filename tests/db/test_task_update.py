@@ -1,13 +1,12 @@
 import datetime
 
 import psycopg2.extensions
+from factories import make_project
 
 from taigun.db.story import StoryWriter
 from taigun.db.task import TaskWriter
 from taigun.models import Story, Task
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 class TestTaskUpdate:
@@ -22,8 +21,7 @@ class TestTaskUpdate:
             Story(project="test-project", subject="Parent"), "admin"
         )
         ref = TaskWriter(real_conn, Resolver(real_conn)).write(
-            Task(project="test-project", subject="Original",
-                 parent=parent_ref),
+            Task(project="test-project", subject="Original", parent=parent_ref),
             "admin",
         )
 
@@ -51,6 +49,8 @@ class TestTaskUpdate:
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat(
-        timespec="seconds"
-    ).replace("+00:00", "Z")
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )

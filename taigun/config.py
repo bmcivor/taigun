@@ -1,8 +1,9 @@
 import tomllib
-import tomli_w
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
+
+import tomli_w
 
 from taigun.exceptions import ConfigError
 
@@ -25,7 +26,14 @@ class ConfigManager:
     """
 
     DEFAULT_PATH = Path.home() / ".config" / "taigun" / "config.toml"
-    REQUIRED_FIELDS = ["host", "port", "database", "username", "password", "acting_user"]
+    REQUIRED_FIELDS = [
+        "host",
+        "port",
+        "database",
+        "username",
+        "password",
+        "acting_user",
+    ]
 
     def __init__(self, path: Path = DEFAULT_PATH) -> None:
         self._path = path

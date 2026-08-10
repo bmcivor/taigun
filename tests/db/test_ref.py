@@ -1,10 +1,9 @@
 import pytest
+from factories import make_project
 
 from taigun.db import RefAllocator
 from taigun.exceptions import RefAllocationError
 from taigun.resolver import Resolver
-
-from factories import make_project
 
 
 class TestRefAllocator:
@@ -13,7 +12,9 @@ class TestRefAllocator:
         Expectations: allocate returns a positive ref.
         """
         project_id = make_project(real_conn)
-        content_type_id = Resolver(real_conn).resolve_content_type("userstories", "userstory")
+        content_type_id = Resolver(real_conn).resolve_content_type(
+            "userstories", "userstory"
+        )
 
         ref = RefAllocator(real_conn).allocate(project_id, 1, content_type_id)
 
@@ -24,7 +25,9 @@ class TestRefAllocator:
         Expectations: second ref is exactly one greater than the first.
         """
         project_id = make_project(real_conn)
-        content_type_id = Resolver(real_conn).resolve_content_type("userstories", "userstory")
+        content_type_id = Resolver(real_conn).resolve_content_type(
+            "userstories", "userstory"
+        )
         allocator = RefAllocator(real_conn)
 
         ref_a = allocator.allocate(project_id, 1, content_type_id)
