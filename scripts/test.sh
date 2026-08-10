@@ -9,7 +9,7 @@ trap cleanup EXIT
 cleanup
 
 if [[ $# -gt 0 ]]; then
-    docker compose run --rm --build test uv run pytest "$@"
+    docker compose run --rm --build --user "$(id -u):$(id -g)" test pytest "$@"
 else
-    docker compose run --rm --build test
+    docker compose run --rm --build --user "$(id -u):$(id -g)" test pytest tests/ -v --cov-fail-under=90
 fi

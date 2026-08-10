@@ -10,13 +10,23 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh './scripts/test.sh'
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    sh './scripts/test.sh'
+                }
+            }
+        }
+        stage('Lint') {
+            steps {
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    sh './scripts/lint.sh'
+                }
             }
         }
     }
 
     post {
         always {
+            junit allowEmptyResults: true, testResults: 'junit.xml'
             sh 'docker compose down -v --remove-orphans || true'
             sh 'docker rmi taigun-docs:${BUILD_NUMBER} || true'
         }

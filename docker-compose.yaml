@@ -40,7 +40,7 @@ services:
     build:
       context: .
       target: test
-    command: uv run pytest tests/ -v
+    command: pytest tests/ -v
     depends_on:
       test-db:
         condition: service_healthy
@@ -48,6 +48,8 @@ services:
         condition: service_completed_successfully
     environment:
       TEST_DB_URL: postgresql://taiga:taiga@test-db:5432/taiga
+    volumes:
+      - .:/app
 
   lint:
     build:
