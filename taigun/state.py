@@ -13,7 +13,7 @@ import datetime
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import yaml
 
@@ -60,7 +60,7 @@ class StateFile:
 
     def __init__(self, path: Path) -> None:
         self._path = path
-        self._entries: dict[str, StateEntry] = {}
+        self._entries: Dict[str, StateEntry] = {}
 
     @property
     def path(self) -> Path:

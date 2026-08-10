@@ -72,6 +72,7 @@ class FileParser:
         ticket.description = description
 
         if body_priority is not None:
+            assert isinstance(ticket, Issue)
             ticket.priority = body_priority
 
         return ticket

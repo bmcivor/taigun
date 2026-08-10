@@ -1,6 +1,6 @@
 import datetime
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -11,7 +11,7 @@ class Story:
     epic: Optional[int] = None
     assignee: Optional[str] = None
     milestone: Optional[str] = None
-    tags: list[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
     status: Optional[str] = None
     priority: Optional[str] = None
 
@@ -25,7 +25,7 @@ class Issue:
     severity: Optional[str] = None
     assignee: Optional[str] = None
     milestone: Optional[str] = None
-    tags: list[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
     status: Optional[str] = None
     priority: Optional[str] = None
 
@@ -39,7 +39,7 @@ class Task:
     epic: Optional[int] = None
     assignee: Optional[str] = None
     milestone: Optional[str] = None
-    tags: list[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
     status: Optional[str] = None
 
 
@@ -49,7 +49,7 @@ class Epic:
     subject: str
     description: str = ""
     assignee: Optional[str] = None
-    tags: list[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
     status: Optional[str] = None
     color: Optional[str] = None
 

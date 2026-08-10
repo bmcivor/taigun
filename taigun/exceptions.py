@@ -34,17 +34,21 @@ class TicketMissingError(TaigunError):
     """Raised when an update targets a ref that no longer exists in Taiga."""
 
 
-class TicketConflictError(TaigunError):
-    """Raised when Taiga's row was modified after the last push recorded in
-    the sidecar.
+class ConflictError(TaigunError):
+    """Base for conflict errors — Taiga's row was modified after the last
+    push recorded in the sidecar.
 
-    The caller is expected to prompt the user; on confirmation it can call
-    ``update(..., ignore_conflict=True)`` to overwrite.
+    The caller is expected to prompt the user; on confirmation the writer
+    can call ``update(..., ignore_conflict=True)`` to overwrite.
     """
 
     def __init__(self, message: str, taiga_modified_date: str) -> None:
         super().__init__(message)
         self.taiga_modified_date = taiga_modified_date
+
+
+class TicketConflictError(ConflictError):
+    """Raised when a story/task/issue/epic row was modified after the last push."""
 
 
 class IdentityChangeError(TaigunError):
@@ -66,14 +70,8 @@ class MilestoneMissingError(TaigunError):
     exists in Taiga."""
 
 
-class MilestoneConflictError(TaigunError):
-    """Raised when Taiga's milestone row was modified after the last push
-    recorded in the sidecar.
-    """
-
-    def __init__(self, message: str, taiga_modified_date: str) -> None:
-        super().__init__(message)
-        self.taiga_modified_date = taiga_modified_date
+class MilestoneConflictError(ConflictError):
+    """Raised when a milestone row was modified after the last push."""
 
 
 class ProjectMissingError(TaigunError):

@@ -164,6 +164,7 @@ def push(
                         dry_run,
                     )
                 else:
+                    assert state is not None
                     _handle_upsert(
                         path,
                         ticket,

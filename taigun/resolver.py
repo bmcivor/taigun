@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Dict, Optional, Tuple
 
 from taigun.exceptions import ResolveError
 
@@ -30,7 +30,7 @@ class Resolver:
 
     def __init__(self, conn) -> None:
         self._conn = conn
-        self._content_type_cache: dict[tuple[str, str], int] = {}
+        self._content_type_cache: Dict[Tuple[str, str], int] = {}
 
     def resolve_project(self, slug: str) -> int:
         """Look up a project ID by slug.

@@ -9,7 +9,7 @@ their own error types.
 import datetime
 from typing import Type
 
-from taigun.exceptions import FieldClearedError, TicketConflictError
+from taigun.exceptions import ConflictError, FieldClearedError, TicketConflictError
 
 
 def parse_taiga_timestamp(value: str) -> datetime.datetime:
@@ -21,7 +21,7 @@ def parse_taiga_timestamp(value: str) -> datetime.datetime:
 def check_taiga_conflict(
     taiga_modified_date: datetime.datetime,
     sidecar_last_pushed_at: datetime.datetime,
-    conflict_exception: Type[Exception] = TicketConflictError,
+    conflict_exception: Type[ConflictError] = TicketConflictError,
 ) -> None:
     """Raise ``conflict_exception`` if Taiga's row was edited after the
     last push recorded in the sidecar.

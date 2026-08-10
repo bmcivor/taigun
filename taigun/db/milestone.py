@@ -70,7 +70,9 @@ class MilestoneWriter:
                     owner_id,
                 ),
             )
-            return cur.fetchone()[0]
+            row = cur.fetchone()
+            assert row is not None
+            return row[0]
 
     def update(
         self,
@@ -167,7 +169,9 @@ class MilestoneWriter:
                 " FROM milestones_milestone WHERE project_id = %s",
                 (project_id,),
             )
-            return cur.fetchone()[0]
+            row = cur.fetchone()
+            assert row is not None
+            return row[0]
 
 
 def _slugify(name: str) -> str:

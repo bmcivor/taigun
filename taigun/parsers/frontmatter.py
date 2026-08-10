@@ -1,5 +1,5 @@
 import datetime
-from typing import Union
+from typing import Dict, List, Tuple, Union
 
 import frontmatter
 
@@ -33,7 +33,7 @@ class FrontmatterParser:
 
     TICKET_TYPES = {"story", "issue", "task", "epic", "milestone"}
 
-    def parse(self, text: str) -> tuple[dict, str]:
+    def parse(self, text: str) -> Tuple[Dict, str]:
         """Split a markdown string into frontmatter fields and body text.
 
         Args:
@@ -147,8 +147,10 @@ class FrontmatterParser:
                     status=metadata.get("status"),
                     color=metadata.get("color"),
                 )
+            case _:
+                raise ParseError(f"Invalid ticket type '{ticket_type}'")
 
-    def _parse_tags(self, value) -> list[str]:
+    def _parse_tags(self, value) -> List[str]:
         """Parse tags from either a comma-separated string or a list.
 
         Args:

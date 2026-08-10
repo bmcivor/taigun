@@ -47,6 +47,8 @@ dev = [
     "pytest-cov>=7.1.0",
     "python-semantic-release==9.21.1",
     "ruff==0.16.1",
+    "types-psycopg2>=2.9.21.20260724",
+    "types-pyyaml>=6.0.12.20260724",
 ]
 
 [tool.semantic_release]
@@ -73,3 +75,8 @@ select = ["E4", "E7", "E9", "F", "I"]
 
 [tool.mypy]
 python_version = "3.11"
+
+# python-frontmatter ships no stubs and no py.typed marker.
+[[tool.mypy.overrides]]
+module = ["frontmatter"]
+ignore_missing_imports = true
