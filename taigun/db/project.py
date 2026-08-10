@@ -2,7 +2,7 @@ import datetime
 import json
 from typing import Optional, Tuple
 
-from taigun.exceptions import ProjectMissingError, ResolveError
+from taigun.exceptions import ProjectMissingError, ResolveError, TaigunError
 
 
 class ProjectCreator:
@@ -339,7 +339,7 @@ class ProjectUpdater:
             )
 
 
-class ProjectExistsError(Exception):
+class ProjectExistsError(TaigunError):
     """Raised when attempting to create a project with a slug that already exists."""
 
 

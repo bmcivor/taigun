@@ -4,6 +4,8 @@ from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Optional
 
+from taigun.exceptions import ConfigError
+
 
 @dataclass
 class Profile:
@@ -38,11 +40,11 @@ class ConfigManager:
             A populated Profile dataclass.
 
         Raises:
-            SystemExit: If the config file is missing, the profile does not exist,
+            ConfigError: If the config file is missing, the profile does not exist,
                 or required fields are absent.
         """
         if not self._path.exists():
-            raise SystemExit(
+            raise ConfigError(
                 f"No config file found at {self._path}. Run 'taigun configure' to set one up."
             )
 
@@ -57,11 +59,11 @@ class ConfigManager:
             section_name = f"profiles.{profile}"
 
         if section is None:
-            raise SystemExit(f"Profile '{section_name}' not found in {self._path}.")
+            raise ConfigError(f"Profile '{section_name}' not found in {self._path}.")
 
         missing = [field for field in self.REQUIRED_FIELDS if field not in section]
         if missing:
-            raise SystemExit(
+            raise ConfigError(
                 f"Profile '{section_name}' is missing required fields: {', '.join(missing)}"
             )
 

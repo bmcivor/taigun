@@ -1,16 +1,40 @@
-class ParseError(Exception):
+class TaigunError(Exception):
+    """Base for every taigun-raised exception.
+
+    Library code should raise a ``TaigunError`` subclass instead of
+    ``SystemExit`` so the CLI layer can catch it, keep the sidecar
+    save-on-exit invariant intact, and translate it to a clean exit
+    without a traceback.
+    """
+
+
+class ParseError(TaigunError):
     pass
 
 
-class ResolveError(Exception):
+class ResolveError(TaigunError):
     pass
 
 
-class TicketMissingError(Exception):
+class ConfigError(TaigunError):
+    """Raised when the config file is missing, the requested profile is
+    absent, or the profile has missing required fields."""
+
+
+class DatabaseConnectionError(TaigunError):
+    """Raised when opening the PostgreSQL connection fails."""
+
+
+class RefAllocationError(TaigunError):
+    """Raised when the per-project ref sequence needed to allocate a new
+    ref number does not exist."""
+
+
+class TicketMissingError(TaigunError):
     """Raised when an update targets a ref that no longer exists in Taiga."""
 
 
-class TicketConflictError(Exception):
+class TicketConflictError(TaigunError):
     """Raised when Taiga's row was modified after the last push recorded in
     the sidecar.
 
@@ -23,26 +47,26 @@ class TicketConflictError(Exception):
         self.taiga_modified_date = taiga_modified_date
 
 
-class IdentityChangeError(Exception):
+class IdentityChangeError(TaigunError):
     """Raised when a re-push tries to change an identity field (project or
     type), which taigun refuses on principle — that's not an edit, that's a
     different ticket.
     """
 
 
-class FieldClearedError(Exception):
+class FieldClearedError(TaigunError):
     """Raised when a re-push omits a frontmatter field that had a value on
     the previous push. Per ADR-004 clearing requires an explicit ``field:
     null`` so we don't lose data to a typo or an accidental deletion.
     """
 
 
-class MilestoneMissingError(Exception):
+class MilestoneMissingError(TaigunError):
     """Raised when a milestone update targets a milestone that no longer
     exists in Taiga."""
 
 
-class MilestoneConflictError(Exception):
+class MilestoneConflictError(TaigunError):
     """Raised when Taiga's milestone row was modified after the last push
     recorded in the sidecar.
     """
@@ -52,6 +76,6 @@ class MilestoneConflictError(Exception):
         self.taiga_modified_date = taiga_modified_date
 
 
-class ProjectMissingError(Exception):
+class ProjectMissingError(TaigunError):
     """Raised when ``taigun projects update`` targets a slug that doesn't
     exist in Taiga."""

@@ -16,13 +16,15 @@ from typing import Optional
 
 import yaml
 
+from taigun.exceptions import TaigunError
+
 
 SIDECAR_DIR_NAME = ".taigun"
 SIDECAR_FILE_NAME = "state.yaml"
 REPO_MARKER_NAME = ".git"
 
 
-class StateError(Exception):
+class StateError(TaigunError):
     """Raised when the sidecar can't be loaded (malformed YAML, duplicate
     entries, or missing required fields on an entry)."""
 

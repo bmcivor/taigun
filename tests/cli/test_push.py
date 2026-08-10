@@ -6,11 +6,13 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 from typer.testing import CliRunner
 
 from taigun.cli import app
 from taigun.config import ConfigManager, Profile
 from taigun.db.project import ProjectCreator
+from taigun.db.story import StoryWriter
 from taigun.resolver import Resolver
 
 runner = CliRunner()
@@ -444,3 +446,113 @@ class TestPushUpsert:
             datetime.date(2026, 8, 15),
             True,
         )
+
+
+class TestPushMidBatchFailure:
+    """E12 #76: an exception that escapes the loop's ``except TaigunError``
+    must not skip the sidecar save, or already-written tickets duplicate on
+    the next push. And ConfigError from ``load`` should translate to a clean
+    Exit(1), not a traceback.
+    """
+
+    def test_escape_saves_sidecar_from_prior_successes(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: two story files pushed in one invocation. StoryWriter.write
+            is patched so the first call runs the real writer (records A) and
+            the second raises a non-TaigunError (RuntimeError), simulating any
+            escape route the loop's ``except TaigunError`` does not cover —
+            the historical bug (SystemExit from library code) is a special
+            case of the same shape.
+        Expectations: sidecar file exists on disk after the crashed run and
+            contains exactly A's entry. Without the ``try/finally`` around
+            the loop, ``state.save()`` sits after the loop and would never
+            run — the sidecar file would not exist.
+        """
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+
+        a = write_ticket(tmp_path, "a.md", "story", slug, subject="A")
+        b = write_ticket(tmp_path, "b.md", "story", slug, subject="B")
+
+        real_write = StoryWriter.write
+        calls = {"n": 0}
+
+        def side_effect(self, ticket, actor):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return real_write(self, ticket, actor)
+            raise RuntimeError("boom")
+
+        with patch_config(config):
+            with patch.object(StoryWriter, "write", autospec=True, side_effect=side_effect):
+                result = runner.invoke(app, ["push", str(a), str(b)])
+
+        assert result.exit_code != 0
+        assert isinstance(result.exception, RuntimeError)
+
+        sidecar = tmp_path / ".taigun" / "state.yaml"
+        assert sidecar.exists(), "sidecar not written — try/finally save didn't run"
+        state = yaml.safe_load(sidecar.read_text()) or {}
+        entries = state.get("entries", [])
+        assert len(entries) == 1
+        assert entries[0]["file_path"] == "a.md"
+        assert entries[0]["ticket_type"] == "story"
+
+    def test_missing_config_file_translates_to_clean_exit_1(self, tmp_path):
+        """Setup: patched ConfigManager points at a nonexistent config file.
+        Expectations: exit_code == 1; stderr message points the user at
+            ``taigun configure``; ``result.exception`` is a Typer/Click Exit
+            (i.e. SystemExit), NOT ConfigError — the CLI translated it.
+        """
+        empty_config = ConfigManager(path=tmp_path / "nope" / "config.toml")
+        with patch("taigun.cli.ConfigManager", return_value=empty_config):
+            result = runner.invoke(app, ["push", str(tmp_path / "any.md")])
+
+        assert result.exit_code == 1
+        assert "taigun configure" in result.output
+        assert isinstance(result.exception, SystemExit)
+
+    def test_partial_batch_typed_error_saves_sidecar_and_continues(
+        self, tmp_path, test_db_profile, cli_conn
+    ):
+        """Setup: three files (A, B, C). Patch StoryWriter.write to raise
+            DatabaseConnectionError on the middle call so B "fails" like a
+            mid-batch VPN drop, while A and C succeed.
+        Expectations: exit_code == 1 (any_failed); sidecar on disk contains
+            entries for A and C (not B). The typed error is caught by the
+            loop's ``except TaigunError`` so processing continues, and the
+            finally block saves the successful entries.
+        """
+        from taigun.exceptions import DatabaseConnectionError
+
+        slug = unique_slug()
+        ProjectCreator(cli_conn, Resolver(cli_conn)).create("Test Project", slug, "admin")
+        config = make_config(tmp_path, test_db_profile)
+
+        a = write_ticket(tmp_path, "a.md", "story", slug, subject="A")
+        b = write_ticket(tmp_path, "b.md", "story", slug, subject="B")
+        c = write_ticket(tmp_path, "c.md", "story", slug, subject="C")
+
+        real_write = StoryWriter.write
+        calls = {"n": 0}
+
+        def side_effect(self, ticket, actor):
+            calls["n"] += 1
+            if calls["n"] == 2:
+                raise DatabaseConnectionError("Could not connect to database: timeout")
+            return real_write(self, ticket, actor)
+
+        with patch_config(config):
+            with patch.object(StoryWriter, "write", autospec=True, side_effect=side_effect):
+                result = runner.invoke(app, ["push", str(a), str(b), str(c)])
+
+        assert result.exit_code == 1
+        assert "✗ b.md:" in result.output
+
+        sidecar = tmp_path / ".taigun" / "state.yaml"
+        assert sidecar.exists()
+        state = yaml.safe_load(sidecar.read_text()) or {}
+        recorded = sorted(e["file_path"] for e in state.get("entries", []))
+        assert recorded == ["a.md", "c.md"]

@@ -3,6 +3,7 @@ import tomli_w
 from pathlib import Path
 
 from taigun.config import ConfigManager, Profile
+from taigun.exceptions import ConfigError
 
 
 VALID_PROFILE = {
@@ -34,9 +35,9 @@ def write_config(path: Path, data: dict) -> None:
 class TestConfigManagerLoad:
     def test_missing_file_raises(self, manager):
         """Setup: no config file exists.
-        Expectations: SystemExit with message directing user to taigun configure.
+        Expectations: ConfigError with message directing user to taigun configure.
         """
-        with pytest.raises(SystemExit, match="taigun configure"):
+        with pytest.raises(ConfigError, match="taigun configure"):
             manager.load()
 
     def test_loads_default_profile(self, manager, config_path):
@@ -64,27 +65,27 @@ class TestConfigManagerLoad:
 
     def test_missing_default_profile_raises(self, manager, config_path):
         """Setup: config file exists but has no default section.
-        Expectations: SystemExit naming the missing profile.
+        Expectations: ConfigError naming the missing profile.
         """
         write_config(config_path, {"profiles": {"lab": VALID_PROFILE}})
-        with pytest.raises(SystemExit, match="default"):
+        with pytest.raises(ConfigError, match="default"):
             manager.load()
 
     def test_missing_named_profile_raises(self, manager, config_path):
         """Setup: config file exists but the requested profile is absent.
-        Expectations: SystemExit naming the missing profile.
+        Expectations: ConfigError naming the missing profile.
         """
         write_config(config_path, {"default": VALID_PROFILE})
-        with pytest.raises(SystemExit, match="other"):
+        with pytest.raises(ConfigError, match="other"):
             manager.load(profile="other")
 
     def test_missing_required_field_raises(self, manager, config_path):
         """Setup: default profile is missing the password field.
-        Expectations: SystemExit naming the missing field.
+        Expectations: ConfigError naming the missing field.
         """
         incomplete = {k: v for k, v in VALID_PROFILE.items() if k != "password"}
         write_config(config_path, {"default": incomplete})
-        with pytest.raises(SystemExit, match="password"):
+        with pytest.raises(ConfigError, match="password"):
             manager.load()
 
     def test_port_coerced_to_int(self, manager, config_path):
