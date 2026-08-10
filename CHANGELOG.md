@@ -1,6 +1,44 @@
 # CHANGELOG
 
 
+## v2.2.0 (2026-08-10)
+
+### Bug Fixes
+
+- **53**: Handle batch operations more gracefully
+  ([`df38e7e`](https://github.com/bmcivor/taigun/commit/df38e7e3c3cc3cccc8a9fed8f152d1585d4486c5))
+
+While making it more robust.
+
+- **57**: Load side car on dry run to make it accurate
+  ([`e78072e`](https://github.com/bmcivor/taigun/commit/e78072e9ba6a094e26d6c4091ccc6ef14fbfa68e))
+
+### Chores
+
+- **101**: Add ruff, mypy, and pytest-cov with config
+  ([`8ce278b`](https://github.com/bmcivor/taigun/commit/8ce278bd1101c7e10dd1a070e0ce6084920f0e95))
+
+- **102**: Add scripts and compose service for lint runs
+  ([`26278ce`](https://github.com/bmcivor/taigun/commit/26278ce1786159cd9348f0bf5f52afd3660b5add))
+
+- **103**: Backfill ruff violations and format
+  ([`b61524f`](https://github.com/bmcivor/taigun/commit/b61524f4af778afeb396c403e6b19081960e777e))
+
+- **104**: Backfill mypy errors and fixes
+  ([`f6f9200`](https://github.com/bmcivor/taigun/commit/f6f9200cf9ee4e0a8bd5b77bfd6b2f3f9ef3b342))
+
+- **105**: Remove LLM hallucinations about coverage reports
+  ([`1998dca`](https://github.com/bmcivor/taigun/commit/1998dca521de4f57305197f0ab1f8f84e9ed5476))
+
+None of this was part of the spec... so that was fun to tear out.
+
+- **105**: Update Jenkinsfile stages
+  ([`557c574`](https://github.com/bmcivor/taigun/commit/557c5743a824f70ec179994e62dc40496e680e23))
+
+- **106**: Document contributing to the app
+  ([`d9299b5`](https://github.com/bmcivor/taigun/commit/d9299b5c7b7b18b36bb29447ee387a89d4df755c))
+
+
 ## v2.1.1 (2026-07-27)
 
 ### Bug Fixes
