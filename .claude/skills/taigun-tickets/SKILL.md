@@ -34,17 +34,9 @@ Layouts currently vary per project — taigun E1–E11 sit under `taigun/docs/ep
 
 taigun runs natively via `uv run` — no docker for the CLI itself.
 
-Config lives at `~/.config/taigun/config.toml`:
-
-```toml
-[default]
-host = "shadowlands.tail252efc.ts.net"
-port = 5432
-database = "taiga"
-username = "taiga"
-password = "changeme"          # tracked in vertex-studio/roles/taiga/templates/env.j2
-acting_user = "bmcivor"
-```
+Connection settings live in `~/.config/taigun/config.toml`, written by `taigun configure`
+(keys: `host`, `port`, `database`, `username`, `password`, `acting_user`).
+Read connection details from there; never copy values from it into this file or any tracked file.
 
 Every ticket carries `assignee: bmcivor` by lab convention.
 
@@ -85,9 +77,9 @@ Sanity-check via the Taiga UI (`http://shadowlands:9000`) or query the lab DB di
 
 ```bash
 uv run --project ~/Development/Lab/taigun python -c "
-import psycopg2
-c = psycopg2.connect(host='shadowlands.tail252efc.ts.net', port=5432, dbname='taiga', user='taiga', password='changeme')
-with c.cursor() as cur:
+from taigun.config import ConfigManager
+from taigun.db.connection import ConnectionManager
+with ConnectionManager(ConfigManager().load()).connect() as c, c.cursor() as cur:
     cur.execute('SELECT ref, subject FROM userstories_userstory WHERE project_id = %s ORDER BY ref', (PROJECT_ID,))
     for row in cur.fetchall(): print(row)
 "
